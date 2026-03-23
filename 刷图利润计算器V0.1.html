@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POE 刷图利润计算器</title>
+<style>
+:root{--bg:#1e1e1e;--bg-sidebar:#262626;--bg-card:#2f2f2f;--bg-hover:#383838;--border:#3d3d3d;--border-light:#4a4a4a;--text:#ececec;--text-secondary:#b4b4b4;--text-dim:#6e6e6e;--accent:#cc785c;--accent-hover:#b8694f;--accent-bg:rgba(204,120,92,.15);--accent-ring:rgba(204,120,92,.18);--green:#4caf7d;--green-bg:rgba(76,175,125,.1);--red:#e05252;--red-bg:rgba(224,82,82,.1);--blue:#5b9bd5;--blue-bg:rgba(91,155,213,.1);--amber:#d4a843;--amber-bg:rgba(212,168,67,.1);--purple:#9b72cf;--font:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;--mono:"JetBrains Mono","Fira Code",Consolas,monospace;--radius:10px;--radius-sm:7px;--transition:.15s ease}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;height:100vh;overflow:hidden}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+.layout{display:flex;height:100vh}
+.sidebar{width:220px;min-width:220px;background:var(--bg-sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.sidebar-header{padding:20px 16px 14px;border-bottom:1px solid var(--border)}
+.sidebar-logo{font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.sidebar-sub{font-size:11px;color:var(--text-dim);margin-top:3px}
+.sidebar-search{padding:10px 12px 6px;position:relative}
+.sidebar-search input{width:100%;padding:7px 10px 7px 30px;font-size:12px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text);outline:none;transition:all var(--transition)}
+.sidebar-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+.sidebar-search input::placeholder{color:var(--text-dim)}
+.sidebar-search .search-ico{position:absolute;left:22px;top:50%;transform:translateY(-50%);color:var(--text-dim);pointer-events:none;display:flex}
+.sidebar-search .search-ico svg{width:13px;height:13px}
+.sidebar-search .search-clear{position:absolute;right:20px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px;display:none;line-height:1}
+.sidebar-search .search-clear:hover{color:var(--text)}
+.sidebar-empty{padding:16px;text-align:center;font-size:12px;color:var(--text-dim)}
+.sidebar-label{padding:14px 16px 6px;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:5px}
+.sidebar-list{flex:1;overflow-y:auto;padding:0 8px}
+.sidebar-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-secondary);transition:all var(--transition);margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg-hover);color:var(--text)}
+.sidebar-item.active{background:var(--accent-bg);color:var(--accent)}
+.sidebar-item .tag{font-size:10px;color:var(--text-dim);background:rgba(255,255,255,.05);padding:1px 5px;border-radius:3px;margin-left:auto;flex-shrink:0}
+.sidebar-item.active .tag{color:var(--accent);background:rgba(204,120,92,.12)}
+.sidebar-actions{padding:10px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.sidebar-actions .row{display:flex;gap:6px}
+.main{flex:1;overflow-y:auto}.main-inner{max-width:1100px;padding:28px 36px}
+.page-header{margin-bottom:20px}
+.page-header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.page-title{font-size:22px;font-weight:700}
+.page-meta{display:flex;align-items:center;gap:16px;margin-top:6px;flex-wrap:wrap}
+.page-meta-item{font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:5px}
+.page-meta-item .v{font-family:var(--mono);font-weight:600}
+.page-meta-item .v.accent{color:var(--accent)}.page-meta-item .v.blue{color:var(--blue)}
+.tab-nav{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:22px}
+.tab-btn{padding:10px 20px;border:none;background:none;font-family:var(--font);font-size:13px;font-weight:500;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all var(--transition);position:relative;top:1px;display:inline-flex;align-items:center;gap:5px}
+.tab-btn:hover{color:var(--text-secondary)}.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.btn{padding:7px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-secondary);font-family:var(--font);font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all var(--transition);white-space:nowrap}
+.btn:hover{background:var(--bg-hover);color:var(--text)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn-primary:hover{background:var(--accent-hover);box-shadow:0 2px 8px rgba(204,120,92,.25)}
+.btn-danger{border-color:rgba(224,82,82,.3);color:var(--red)}.btn-danger:hover{background:var(--red-bg)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-icon{width:28px;height:28px;padding:0;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px;transition:all var(--transition)}
+.btn-icon:hover{color:var(--text);background:var(--bg-hover)}
+.btn-icon.danger{border-color:rgba(224,82,82,.2);color:rgba(224,82,82,.5)}.btn-icon.danger:hover{color:var(--red);background:var(--red-bg)}
+input,select,textarea{padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:all var(--transition)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-ring)}
+input::placeholder,textarea::placeholder{color:var(--text-dim)}
+input[type="number"]{font-family:var(--mono)}select{cursor:pointer}textarea{resize:vertical;min-height:60px;line-height:1.5}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden}
+.card-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.card-bar.accent{background:var(--accent)}.card-bar.green{background:var(--green)}.card-bar.blue{background:var(--blue)}.card-bar.amber{background:var(--amber)}.card-bar.purple{background:var(--purple)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.item-header-row{display:flex;align-items:center;padding:8px 0;font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+.item-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid rgba(61,61,61,.5);gap:8px;font-size:13px;transition:background var(--transition)}
+.item-row:hover{background:rgba(255,255,255,.015)}
+.col-name{flex:2.2;min-width:80px}.col-unit{flex:.8;text-align:center;min-width:55px}.col-price{flex:1;text-align:right;min-width:65px}
+.col-d{flex:1;text-align:right;min-width:70px;font-family:var(--mono);font-size:12px;color:var(--amber)}
+.col-c{flex:1;text-align:right;min-width:70px;font-family:var(--mono);font-size:12px;color:var(--blue)}
+.col-actions{width:64px;display:flex;gap:4px;justify-content:flex-end}
+.item-row input{width:100%;padding:5px 8px;font-size:12px}.item-row select{width:100%;padding:5px 6px;font-size:11px}
+.total-row{display:flex;align-items:center;justify-content:space-between;padding:16px 0 2px;margin-top:8px;border-top:2px solid var(--border)}
+.total-label{font-size:13px;font-weight:600;color:var(--text-secondary);display:flex;align-items:center;gap:4px}
+.total-values{display:flex;align-items:baseline;gap:14px}
+.total-d{font-size:20px;font-weight:700;color:var(--amber);font-family:var(--mono)}.total-eq{color:var(--text-dim);font-size:13px}.total-c{font-size:16px;font-weight:600;color:var(--blue);font-family:var(--mono)}
+.conv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.conv-grid{grid-template-columns:1fr}.sidebar{display:none}.summary-grid{grid-template-columns:repeat(2,1fr)!important}}
+.conv-tabs{display:flex;gap:4px;margin-bottom:16px}
+.conv-tab{flex:1;padding:7px 0;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-dim);font-family:var(--mono);font-size:12px;font-weight:500;cursor:pointer;transition:all var(--transition);text-align:center}
+.conv-tab:hover{color:var(--text-secondary)}.conv-tab.active{background:var(--accent-bg);border-color:rgba(204,120,92,.3);color:var(--accent)}
+.conv-body{display:flex;align-items:center;gap:12px}
+.conv-field{flex:1;position:relative}.conv-field input{width:100%;padding:14px 36px 14px 14px;font-family:var(--mono);font-size:18px}
+.conv-unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-dim)}
+.conv-arrow{color:var(--text-dim);font-size:24px;flex-shrink:0;line-height:1}
+.conv-result-box{flex:1;text-align:center;padding:14px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.conv-result-val{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent)}
+.conv-result-unit{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-left:4px}
+.preset-row{display:flex;gap:6px;margin-top:14px}.preset-row .btn{flex:1;justify-content:center;font-family:var(--mono);font-size:12px}
+.ratio-display{font-size:13px;color:var(--text-secondary);margin-top:14px;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.ratio-display strong{color:var(--accent);font-family:var(--mono)}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.summary-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;position:relative;overflow:hidden}
+.summary-card .card-bar{height:3px}.summary-label{font-size:11px;color:var(--text-dim);font-weight:500;margin-bottom:5px;display:flex;align-items:center;justify-content:center;gap:3px}
+.summary-value{font-family:var(--mono);font-size:18px;font-weight:700}
+.record-item{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;transition:all var(--transition)}
+.record-item:hover{border-color:var(--border-light)}.record-item.expanded{border-color:var(--accent)}
+.record-summary{display:flex;align-items:center;padding:10px 14px;cursor:pointer;transition:background var(--transition);gap:8px}
+.record-summary:hover{background:rgba(255,255,255,.02)}
+.record-num{width:28px;font-size:12px;color:var(--text-dim);font-family:var(--mono);font-weight:600;flex-shrink:0}
+.record-chips{display:flex;gap:12px;flex:1;flex-wrap:wrap;align-items:center}
+.record-chip{font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:4px}
+.record-chip .label{color:var(--text-dim);font-size:11px;font-family:var(--font)}
+.record-arrow{color:var(--text-dim);font-size:12px;transition:transform .2s ease;flex-shrink:0;margin-left:8px}
+.record-item.expanded .record-arrow{transform:rotate(90deg)}
+.record-actions{display:flex;gap:4px;flex-shrink:0;margin-left:4px}
+.record-detail{display:none;padding:0 14px 14px;border-top:1px solid var(--border);animation:slideDown .2s ease}
+.record-item.expanded .record-detail{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.detail-item{padding:10px 14px;background:var(--bg);border-radius:6px;border:1px solid rgba(61,61,61,.5)}
+.detail-item .dl{font-size:11px;color:var(--text-dim);margin-bottom:3px}.detail-item .dv{font-family:var(--mono);font-size:14px;font-weight:600}
+.detail-note{margin-top:12px;padding:10px 14px;background:var(--bg);border-radius:6px;border:1px solid rgba(61,61,61,.5)}
+.detail-note .dl{font-size:11px;color:var(--text-dim);margin-bottom:3px}.detail-note .dv{font-size:13px;color:var(--text-secondary);white-space:pre-wrap;word-break:break-all}
+.detail-cost-list{margin-top:4px}.detail-cost-item{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(61,61,61,.3)}.detail-cost-item:last-child{border-bottom:none}
+.edit-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:22px}
+.edit-fields{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:3px}
+.field input.w160{width:160px}.field input.w100{width:100px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:1000;animation:fadeIn .15s ease}
+.modal{background:var(--bg-card);border:1px solid var(--border-light);border-radius:12px;padding:28px;width:420px;max-width:90vw;box-shadow:0 24px 64px rgba(0,0,0,.5);animation:slideUp .2s ease}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:20px}
+.modal .field{margin-bottom:14px}.modal .field label{display:flex;margin-bottom:6px;font-size:12px;color:var(--text-secondary);font-weight:500}
+.modal .field input,.modal .field textarea{width:100%}.modal .field input.big{padding:10px 14px;font-size:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.modal-hint{font-size:12px;color:var(--text-dim);margin-top:-8px;margin-bottom:12px}
+/* Confirm delete modal */
+.confirm-modal .cm-warn{font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px}
+.confirm-modal .cm-warn strong{color:var(--red)}
+.confirm-modal .cm-hint{font-size:12px;color:var(--text-dim);margin-bottom:8px}
+.confirm-modal .cm-hint code{background:var(--red-bg);color:var(--red);padding:1px 8px;border-radius:4px;font-family:var(--font);font-size:12px;font-weight:600}
+.confirm-modal .cm-input{width:100%;padding:10px 14px;font-size:15px;text-align:center;letter-spacing:2px}
+.confirm-modal .cm-input.valid{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,82,82,.15)}
+.confirm-modal .cm-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+.confirm-modal .btn-confirm-del{background:var(--red);border-color:var(--red);color:#fff;font-weight:600;opacity:.4;pointer-events:none;transition:all var(--transition)}
+.confirm-modal .btn-confirm-del.enabled{opacity:1;pointer-events:auto}
+.confirm-modal .btn-confirm-del.enabled:hover{background:#c94444;box-shadow:0 2px 8px rgba(224,82,82,.3)}
+.toast{position:fixed;top:24px;right:24px;background:var(--bg-card);border:1px solid var(--border-light);color:var(--text);padding:11px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:2000;box-shadow:0 8px 32px rgba(0,0,0,.4);display:none;animation:slideIn .2s ease}
+.toast-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);margin-right:8px;vertical-align:middle}
+.empty-state{text-align:center;padding:40px 0}.empty-icon{font-size:36px;margin-bottom:10px;opacity:.5}.empty-text{color:var(--text-dim);font-size:13px}
+.app-footer{margin-top:40px;padding:20px 0;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--text-dim)}
+.author-card{margin-top:28px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;text-align:center;position:relative;overflow:hidden}
+.author-card .card-bar{height:3px}
+.author-card-info{font-size:13px;color:var(--text-secondary);margin-bottom:6px}
+.author-card-info strong{color:var(--text);font-weight:600}
+.author-card-contact{font-size:12px;color:var(--text-dim);margin-bottom:20px}
+.author-card-msg{font-size:13px;color:var(--text-secondary);line-height:1.7;margin-bottom:0;max-width:400px;margin-left:auto;margin-right:auto}
+.tip{position:relative;display:inline-flex;align-items:center}
+.tip-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;cursor:help;transition:all var(--transition);flex-shrink:0;margin-left:4px;font-size:12px}
+.tip-icon:hover{transform:scale(1.2)}
+.tip-content{display:none;position:absolute;z-index:100;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;padding:10px 14px;font-size:12px;font-weight:400;color:var(--text-secondary);line-height:1.55;white-space:normal;width:max-content;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.4);pointer-events:none}
+.tip-content::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--border-light)}
+.tip:hover .tip-content{display:block;animation:fadeIn .12s ease}
+.tip-right .tip-content{left:auto;right:0;transform:none}.tip-right .tip-content::after{left:auto;right:14px;transform:none}
+.tip-left .tip-content{left:0;right:auto;transform:none}.tip-left .tip-content::after{left:14px;right:auto;transform:none}
+.tip-below .tip-content{bottom:auto;top:calc(100% + 8px)}.tip-below .tip-content::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--border-light)}
+.ico{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.ico{display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1;vertical-align:middle}
+.ico-sm{font-size:12px}
+.guide-hero{text-align:center;padding:32px 0 24px}.guide-hero-icon{font-size:48px;margin-bottom:12px}.guide-hero-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.guide-hero-sub{font-size:13px;color:var(--text-secondary);max-width:460px;margin:0 auto;line-height:1.6}
+.guide-steps{display:flex;flex-direction:column;gap:14px;margin-top:8px}
+.guide-step{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden;display:flex;gap:18px;align-items:flex-start;transition:border-color var(--transition)}
+.guide-step:hover{border-color:var(--border-light)}.guide-step .card-bar{height:3px}
+.guide-step-num{width:36px;height:36px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-family:var(--mono);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.guide-step-body{flex:1}.guide-step-title{font-size:14px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.guide-step-desc{font-size:13px;color:var(--text-secondary);line-height:1.65}
+.guide-step-desc code{background:rgba(204,120,92,.12);color:var(--accent);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:12px}
+.guide-step-action{margin-top:12px}
+.guide-tips{margin-top:20px}.guide-tips-title{font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:.8px}
+.guide-tip-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:700px){.guide-tip-grid{grid-template-columns:1fr}}
+.guide-tip{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;gap:10px;align-items:flex-start}
+.guide-tip-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.guide-tip-text{font-size:12px;color:var(--text-secondary);line-height:1.55}.guide-tip-text strong{color:var(--text);font-weight:600}
+.guide-start-bar{margin-top:28px;text-align:center;padding:20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius)}.guide-start-bar .btn-primary{padding:10px 28px;font-size:14px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideDown{from{opacity:0;max-height:0}to{opacity:1;max-height:400px}}
+</style>
+</head>
+<body>
+<div class="layout"><div class="sidebar" id="sidebar"></div><div class="main"><div class="main-inner" id="main"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const SK='poe-calc-v6',uid=()=>Math.random().toString(36).slice(2,10);
+const esc=s=>{const d=document.createElement('div');d.textContent=s;return d.innerHTML};
+const fmtTime=t=>{if(!t)return'—';const d=new Date(t);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+const ICO={
+  plus:'➕',trash:'🗑️',edit:'✏️',check:'✅',copy:'📋',chevRight:'▶️',
+  settings:'⚙️',map:'🗺️',dollar:'💰',barChart:'📊',book:'📖',
+  info:'ℹ️',help:'💡',clock:'🕐',tag:'🏷️',layers:'📚',note:'📝',
+  arrowRight:'➡️',exchange:'💱',download:'📥',upload:'📤',
+  search:'🔍',x:'❌',save:'💾',
+};
+function ico(n,c){return`<span class="ico ${c||''}">${ICO[n]||''}</span>`}
+function tip(t,p){return`<span class="tip ${p||''}"><span class="tip-icon">💡</span><span class="tip-content">${t}</span></span>`}
+// 中文名
+const D='神圣石',C='混沌石';
+
+const DEFAULTS=[
+  {id:'d1',name:'T16 迷雾刷图',map:'T16 墓地',dcRatio:170,items:[
+    {id:'i1',name:'地图',unit:'C',price:30},{id:'i2',name:'迷雾宝珠',unit:'D',price:1},
+    {id:'i3',name:'甲虫',unit:'D',price:1},{id:'i4',name:'星盘',unit:'D',price:0.1},
+    {id:'i5',name:'通货钉子',unit:'D',price:0.46}],results:[]},
+  {id:'d2',name:'裂隙刷图',map:'T16 丛林谷',dcRatio:170,items:[
+    {id:'i1',name:'地图',unit:'C',price:15},{id:'i2',name:'裂隙石',unit:'D',price:0.5},
+    {id:'i3',name:'甲虫',unit:'D',price:0.8},{id:'i4',name:'星盘',unit:'D',price:0.1}],results:[]}
+];
+
+let configs=[],activeId='',editingConfig=false,editingItemId=null,convMode='c2d',currentTab='cost',expandedRecord=null,sidebarSearch='';
+
+function load(){
+  let first=true;
+  try{const r=localStorage.getItem(SK);if(r){const s=JSON.parse(r);configs=s.configs||[];activeId=s.activeId||'';first=false}}catch(e){}
+  if(!configs.length)configs=JSON.parse(JSON.stringify(DEFAULTS));
+  if(!activeId||!configs.find(c=>c.id===activeId))activeId=configs[0].id;
+  currentTab=first?'guide':'cost';
+}
+function save(){try{localStorage.setItem(SK,JSON.stringify({configs,activeId}))}catch(e){}}
+function AA(){return configs.find(c=>c.id===activeId)||configs[0]}
+function c2d(c,r){return r>0?c/r:0}
+function d2c(d,r){return d*r}
+function iD(item,r){return item.unit==='D'?item.price:c2d(item.price,r)}
+function totalCostD(){const a=AA();let t=0;a.items.forEach(i=>{t+=iD(i,a.dcRatio)});return t}
+function uName(u){return u==='D'?D:C}
+
+let toastT;
+function toast(m){clearTimeout(toastT);const e=document.getElementById('toast');e.innerHTML=`<span class="toast-dot"></span>${esc(m)}`;e.style.display='block';e.style.animation='none';e.offsetHeight;e.style.animation='';toastT=setTimeout(()=>e.style.display='none',2200)}
+
+function refreshTotals(){const a=AA();let t=0;a.items.forEach(i=>{t+=iD(i,a.dcRatio)});const eD=document.getElementById('total-d'),eC=document.getElementById('total-c');if(eD)eD.textContent=t.toFixed(3)+' D';if(eC)eC.textContent=(t*a.dcRatio).toFixed(1)+' C'}
+function refreshItemCalc(item){const a=AA(),dv=iD(item,a.dcRatio),cv=dv*a.dcRatio;const eD=document.getElementById('id-'+item.id),eC=document.getElementById('ic-'+item.id);if(eD)eD.textContent=dv.toFixed(3)+'D';if(eC)eC.textContent=cv.toFixed(1)+'C'}
+function refreshAllItems(){AA().items.forEach(refreshItemCalc)}
+function refreshConv(){const a=AA(),inp=document.getElementById('conv-input');if(!inp)return;const v=parseFloat(inp.value)||0;const r=convMode==='c2d'?c2d(v,a.dcRatio):d2c(v,a.dcRatio);const dec=convMode==='c2d'?4:1;const el=document.getElementById('conv-result-val');if(el)el.textContent=inp.value?r.toFixed(dec):'—'}
+
+// ========== CONFIRM DELETE MODAL ==========
+function confirmDelete(message,onConfirm){
+  let old=document.getElementById('modal-ov');if(old)old.remove();
+  const ov=document.createElement('div');ov.id='modal-ov';ov.className='modal-overlay';
+  ov.innerHTML=`<div class="modal confirm-modal">
+    <h3>${ico('trash')} 确认删除</h3>
+    <div class="cm-warn">${message}</div>
+    <div class="cm-hint">请输入 <code>确认</code> 以继续操作</div>
+    <input class="cm-input" id="cm-inp" placeholder="请输入"确认"" autocomplete="off">
+    <div class="cm-actions">
+      <button class="btn" id="cm-cancel">取消</button>
+      <button class="btn btn-confirm-del" id="cm-ok">${ico('trash','ico-sm')} 确认删除</button>
+    </div>
+  </div>`;
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  document.body.appendChild(ov);
+  const inp=document.getElementById('cm-inp'),okBtn=document.getElementById('cm-ok');
+  inp.focus();
+  inp.oninput=()=>{
+    const match=inp.value.trim()==='确认';
+    okBtn.classList.toggle('enabled',match);
+    inp.classList.toggle('valid',match);
+  };
+  inp.onkeydown=e=>{if(e.key==='Enter'&&inp.value.trim()==='确认'){ov.remove();onConfirm()}};
+  okBtn.onclick=()=>{if(inp.value.trim()==='确认'){ov.remove();onConfirm()}};
+  document.getElementById('cm-cancel').onclick=()=>ov.remove();
+}
+
+// ========== IMPORT / EXPORT ==========
+function exportData(){
+  const json=JSON.stringify({configs,activeId},null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`poe-calc-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  toast('数据已导出');
+}
+function importData(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const data=JSON.parse(ev.target.result);
+        if(!data.configs||!Array.isArray(data.configs)){toast('文件格式错误');return}
+        confirmDelete(`将导入 <strong>${data.configs.length} 个配置</strong>，当前所有数据会被覆盖，此操作不可撤销。`,()=>{
+          configs=data.configs;activeId=data.activeId||configs[0]?.id||'';
+          save();render();toast(`已导入 ${configs.length} 个配置`);
+        });
+      }catch(err){toast('JSON 解析失败')}
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+// ========== SIDEBAR ==========
+function renderSidebar(){
+  const sb=document.getElementById('sidebar');sb.innerHTML='';
+  // Header + search
+  sb.innerHTML=`<div class="sidebar-header"><div class="sidebar-logo"><span class="icon" style="font-size:18px">⚔</span>POE 利润计算器</div></div>
+    <div class="sidebar-search"><span class="search-ico">${ICO.search}</span><input id="sb-search" placeholder="搜索配置..." value="${esc(sidebarSearch)}"><button class="search-clear" id="sb-clear" style="${sidebarSearch?'display:flex':'display:none'}">${ICO.x}</button></div>
+    <div class="sidebar-label">${ico('layers','ico-sm')} 刷图配置</div>`;
+
+  // Filter configs
+  const keyword=sidebarSearch.trim().toLowerCase();
+  const filtered=keyword?configs.filter(c=>c.name.toLowerCase().includes(keyword)||c.map.toLowerCase().includes(keyword)):configs;
+
+  const list=document.createElement('div');list.className='sidebar-list';
+  if(filtered.length){
+    filtered.forEach(c=>{
+      const it=document.createElement('button');it.className='sidebar-item'+(c.id===activeId?' active':'');
+      const ms=c.map.replace(/^T\d+\s*/,'');
+      it.innerHTML=`${ico('map','ico-sm')} <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span><span class="tag">${esc(ms||c.map)}</span>`;
+      it.onclick=()=>{activeId=c.id;editingConfig=false;editingItemId=null;expandedRecord=null;save();render()};
+      list.appendChild(it);
+    });
+  }else{
+    list.innerHTML=`<div class="sidebar-empty">${ico('search','ico-sm')} 没有找到匹配的配置</div>`;
+  }
+  sb.appendChild(list);
+
+  // Wire search — oninput only updates list, no full render to keep focus
+  const searchInp=document.getElementById('sb-search');
+  const clearBtn=document.getElementById('sb-clear');
+  searchInp.oninput=function(){
+    sidebarSearch=this.value;
+    clearBtn.style.display=sidebarSearch?'flex':'none';
+    // Re-render only the list portion
+    const keyword=sidebarSearch.trim().toLowerCase();
+    const filtered=keyword?configs.filter(c=>c.name.toLowerCase().includes(keyword)||c.map.toLowerCase().includes(keyword)):configs;
+    list.innerHTML='';
+    if(filtered.length){
+      filtered.forEach(c=>{
+        const it=document.createElement('button');it.className='sidebar-item'+(c.id===activeId?' active':'');
+        const ms=c.map.replace(/^T\d+\s*/,'');
+        it.innerHTML=`${ico('map','ico-sm')} <span style="flex:1;overflow:hidden;text-overflow:ellipsis">${esc(c.name)}</span><span class="tag">${esc(ms||c.map)}</span>`;
+        it.onclick=()=>{activeId=c.id;editingConfig=false;editingItemId=null;expandedRecord=null;save();render()};
+        list.appendChild(it);
+      });
+    }else{
+      list.innerHTML=`<div class="sidebar-empty">${ico('search','ico-sm')} 没有找到匹配的配置</div>`;
+    }
+  };
+  clearBtn.onclick=()=>{sidebarSearch='';searchInp.value='';clearBtn.style.display='none';searchInp.oninput();searchInp.focus()};
+
+  const actions=document.createElement('div');actions.className='sidebar-actions';
+  const addBtn=document.createElement('button');addBtn.className='btn btn-primary';addBtn.style.cssText='width:100%;justify-content:center';addBtn.innerHTML=`${ico('plus','ico-sm')} 新建配置`;
+  addBtn.onclick=()=>{const n={id:uid(),name:'新配置',map:'T16',dcRatio:170,items:[{id:uid(),name:'地图',unit:'C',price:0}],results:[]};configs.push(n);activeId=n.id;editingConfig=true;editingItemId=null;currentTab='cost';save();render();toast('新配置已创建')};
+  actions.appendChild(addBtn);
+  const r1=document.createElement('div');r1.className='row';
+  const dupBtn=document.createElement('button');dupBtn.className='btn btn-sm';dupBtn.style.cssText='flex:1;justify-content:center';dupBtn.innerHTML=`${ico('copy','ico-sm')} 复制`;
+  dupBtn.onclick=()=>{const a=AA(),d=JSON.parse(JSON.stringify(a));d.id=uid();d.name+=' (副本)';d.items.forEach(i=>i.id=uid());d.results.forEach(r=>r.id=uid());configs.push(d);activeId=d.id;save();render();toast('配置已复制')};
+  const delBtn=document.createElement('button');delBtn.className='btn btn-sm btn-danger';delBtn.style.cssText='flex:1;justify-content:center';delBtn.innerHTML=`${ico('trash','ico-sm')} 删除`;
+  delBtn.onclick=()=>{if(configs.length<=1){toast('至少保留一个配置');return}confirmDelete(`确定删除配置「<strong>${esc(AA().name)}</strong>」？该配置下的所有物品和利润记录将一并删除，此操作不可撤销。`,()=>{const idx=configs.findIndex(c=>c.id===activeId);configs=configs.filter(c=>c.id!==activeId);activeId=configs[Math.max(0,idx-1)].id;save();render();toast('配置已删除')})};
+  r1.appendChild(dupBtn);r1.appendChild(delBtn);actions.appendChild(r1);
+  // Import / Export
+  const r2=document.createElement('div');r2.className='row';
+  const expBtn=document.createElement('button');expBtn.className='btn btn-sm';expBtn.style.cssText='flex:1;justify-content:center';expBtn.innerHTML=`${ico('download','ico-sm')} 导出`;expBtn.onclick=exportData;
+  const impBtn=document.createElement('button');impBtn.className='btn btn-sm';impBtn.style.cssText='flex:1;justify-content:center';impBtn.innerHTML=`${ico('upload','ico-sm')} 导入`;impBtn.onclick=importData;
+  r2.appendChild(expBtn);r2.appendChild(impBtn);actions.appendChild(r2);
+  sb.appendChild(actions);
+}
+
+// ========== MAIN ==========
+function renderMain(){
+  const main=document.getElementById('main');main.innerHTML='';
+  const a=AA();
+  if(editingConfig){
+    const ep=document.createElement('div');ep.className='edit-panel';
+    ep.innerHTML=`<div class="edit-fields">
+      <div class="field"><label>配置名称 ${tip('为这套刷图方案起个名字，方便识别和切换','tip-below')}</label><input id="m-name" class="w160"></div>
+      <div class="field"><label>地图 ${tip('要刷的地图名称和等级，如 T16 墓地','tip-below')}</label><input id="m-map" class="w160"></div>
+      <div class="field"><label>1D = ?C ${tip('${D}与${C}的兑换比例，影响所有换算','tip-below')}</label><input id="m-ratio" type="number" class="w100"></div>
+      <button class="btn btn-primary" id="m-done">${ico('check','ico-sm')} 完成编辑</button>
+    </div>`;
+    main.appendChild(ep);
+    const mN=document.getElementById('m-name'),mM=document.getElementById('m-map'),mR=document.getElementById('m-ratio');
+    mN.value=a.name;mM.value=a.map;mR.value=a.dcRatio;
+    mN.oninput=function(){a.name=this.value;save()};
+    mM.oninput=function(){a.map=this.value;save()};
+    mR.oninput=function(){a.dcRatio=parseFloat(this.value)||0;save();refreshAllItems();refreshTotals();refreshConv()};
+    document.getElementById('m-done').onclick=()=>{editingConfig=false;save();render();toast('已保存')};
+  } else {
+    const ph=document.createElement('div');ph.className='page-header';
+    ph.innerHTML=`<div class="page-header-top"><div class="page-title">${esc(a.name)}</div><button class="btn" id="p-edit">${ico('settings','ico-sm')} 编辑配置</button></div>
+      <div class="page-meta"><div class="page-meta-item">${ico('map','ico-sm')} 地图 <span class="v blue">${esc(a.map)}</span></div><div class="page-meta-item">${ico('exchange','ico-sm')} 汇率 <span class="v accent">1D = ${a.dcRatio}C</span></div><div class="page-meta-item">${ico('tag','ico-sm')} 物品 <span class="v">${a.items.length}项</span></div><div class="page-meta-item">${ico('barChart','ico-sm')} 记录 <span class="v">${a.results.length}条</span></div></div>`;
+    main.appendChild(ph);
+    document.getElementById('p-edit').onclick=()=>{editingConfig=true;render()};
+  }
+  // Tabs — guide last
+  const tabNav=document.createElement('div');tabNav.className='tab-nav';
+  [{id:'cost',icon:'tag',label:'成本配置'},{id:'records',icon:'barChart',label:'利润记录'},{id:'converter',icon:'exchange',label:'汇率换算'},{id:'guide',icon:'book',label:'使用引导'}].forEach(t=>{
+    const btn=document.createElement('button');btn.className='tab-btn'+(currentTab===t.id?' active':'');
+    btn.innerHTML=`${ico(t.icon,'ico-sm')} ${t.label}`;
+    btn.onclick=()=>{currentTab=t.id;render()};
+    tabNav.appendChild(btn);
+  });
+  main.appendChild(tabNav);
+  if(currentTab==='cost')renderCostTab(main,a);
+  else if(currentTab==='converter')renderConvTab(main,a);
+  else if(currentTab==='records')renderRecordsTab(main,a);
+  else if(currentTab==='guide')renderGuideTab(main,a);
+}
+
+// ========== COST TAB ==========
+function renderCostTab(main,a){
+  const card=document.createElement('div');card.className='card';
+  card.innerHTML=`<div class="card-bar amber"></div>
+    <div class="card-header"><div class="card-title">${ico('tag')} 单图投入物品 ${tip('每次开图消耗的所有物品及价格，系统根据汇率自动换算','tip-below tip-left')}</div><button class="btn btn-primary btn-sm" id="add-item">${ico('plus','ico-sm')} 添加物品</button></div>
+    <div><div class="item-header-row"><span class="col-name">物品</span><span class="col-unit">单位 ${tip('计价货币：${C}(C) 或 ${D}(D)','tip-below')}</span><span class="col-price">价格 ${tip('物品单价，自动换算为另一种货币','tip-below')}</span><span class="col-d">≈ ${D} ${tip('按汇率换算后的${D}等值','tip-below')}</span><span class="col-c">≈ ${C} ${tip('按汇率换算后的${C}等值','tip-below')}</span><span class="col-actions"></span></div><div id="rows"></div></div>`;
+  let tD=0;a.items.forEach(i=>{tD+=iD(i,a.dcRatio)});const tC=tD*a.dcRatio;
+  const tr=document.createElement('div');tr.className='total-row';
+  tr.innerHTML=`<span class="total-label">单图总成本 ${tip('所有物品合计，即每开一张图的固定投入','tip-below tip-left')}</span><div class="total-values"><span class="total-d" id="total-d">${tD.toFixed(3)} D</span><span class="total-eq">≈</span><span class="total-c" id="total-c">${tC.toFixed(1)} C</span></div>`;
+  card.appendChild(tr);main.appendChild(card);
+  const rowsC=document.getElementById('rows');
+  a.items.forEach(item=>buildRow(rowsC,item,a));
+  document.getElementById('add-item').onclick=()=>{const ni={id:uid(),name:'新物品',unit:'C',price:0};a.items.push(ni);editingItemId=ni.id;save();render()};
+}
+
+function buildRow(container,item,a){
+  const dv=iD(item,a.dcRatio),cv=dv*a.dcRatio;
+  const row=document.createElement('div');row.className='item-row';
+  if(editingItemId===item.id){
+    row.innerHTML=`<div class="col-name"><input class="inp-n" placeholder="物品名"></div>
+      <div class="col-unit"><select class="inp-u"><option value="C">${C}</option><option value="D">${D}</option></select></div>
+      <div class="col-price"><input class="inp-p" type="number" step="0.01" style="text-align:right"></div>
+      <span class="col-d" id="id-${item.id}">${dv.toFixed(3)}D</span>
+      <span class="col-c" id="ic-${item.id}">${cv.toFixed(1)}C</span>
+      <div class="col-actions"><button class="btn-icon i-ok" title="完成">${ico('check')}</button><button class="btn-icon danger i-rm" title="删除">${ico('trash')}</button></div>`;
+    container.appendChild(row);
+    const nI=row.querySelector('.inp-n'),pI=row.querySelector('.inp-p'),uS=row.querySelector('.inp-u');
+    nI.value=item.name;pI.value=item.price;uS.value=item.unit;
+    nI.oninput=function(){item.name=this.value;save()};
+    pI.oninput=function(){item.price=parseFloat(this.value)||0;save();refreshItemCalc(item);refreshTotals()};
+    uS.onchange=function(){item.unit=this.value;save();refreshItemCalc(item);refreshTotals()};
+    row.querySelector('.i-ok').onclick=()=>{editingItemId=null;save();render()};
+    row.querySelector('.i-rm').onclick=()=>{confirmDelete(`确定删除物品「<strong>${esc(item.name)}</strong>」？`,()=>{a.items=a.items.filter(i=>i.id!==item.id);if(editingItemId===item.id)editingItemId=null;save();render();toast('物品已删除')})};
+    setTimeout(()=>nI.focus(),0);
+  }else{
+    row.innerHTML=`<span class="col-name" style="font-weight:500">${esc(item.name)}</span>
+      <span class="col-unit" style="font-size:11px;font-weight:600;color:${item.unit==='D'?'var(--amber)':'var(--blue)'}">${uName(item.unit)}</span>
+      <span class="col-price" style="font-family:var(--mono);font-size:12px;color:var(--text-secondary)">${item.price}${item.unit}</span>
+      <span class="col-d" id="id-${item.id}">${dv.toFixed(3)}D</span>
+      <span class="col-c" id="ic-${item.id}">${cv.toFixed(1)}C</span>
+      <div class="col-actions"><button class="btn-icon i-ed" title="编辑">${ico('edit')}</button><button class="btn-icon danger i-rm" title="删除">${ico('trash')}</button></div>`;
+    container.appendChild(row);
+    row.querySelector('.i-ed').onclick=()=>{editingItemId=item.id;render()};
+    row.querySelector('.i-rm').onclick=()=>{confirmDelete(`确定删除物品「<strong>${esc(item.name)}</strong>」？`,()=>{a.items=a.items.filter(i=>i.id!==item.id);save();render();toast('物品已删除')})};
+  }
+}
+
+// ========== CONVERTER TAB ==========
+function renderConvTab(main,a){
+  const grid=document.createElement('div');grid.className='conv-grid';
+  const fu=convMode==='c2d'?'C':'D',tu=convMode==='c2d'?'D':'C';
+  const fName=convMode==='c2d'?C:D,tName=convMode==='c2d'?D:C;
+  const presets=convMode==='c2d'?[10,50,100,500]:[0.1,0.5,1,5];
+  const c1=document.createElement('div');c1.className='card';
+  c1.innerHTML=`<div class="card-bar accent"></div>
+    <div class="card-title" style="margin-bottom:16px">${ico('exchange')} 货币换算 ${tip('根据当前汇率在${C}和${D}之间快速换算','tip-below tip-left')}</div>
+    <div class="conv-tabs">
+      <button class="conv-tab${convMode==='c2d'?' active':''}" id="cv-c2d">${C} → ${D}</button>
+      <button class="conv-tab${convMode==='d2c'?' active':''}" id="cv-d2c">${D} → ${C}</button>
+    </div>
+    <div class="conv-body">
+      <div class="conv-field"><input type="number" step="0.01" placeholder="输入数值" id="conv-input"><span class="conv-unit">${fu}</span></div>
+      <span class="conv-arrow">➡️</span>
+      <div class="conv-result-box"><span class="conv-result-val" id="conv-result-val">—</span><span class="conv-result-unit">${tu}</span></div>
+    </div>
+    <div class="preset-row">${presets.map(p=>`<button class="btn pst" data-v="${p}">${p}${fu}</button>`).join('')}</div>`;
+  grid.appendChild(c1);
+  const c2=document.createElement('div');c2.className='card';
+  const tD=totalCostD(),tC=tD*a.dcRatio;
+  c2.innerHTML=`<div class="card-bar blue"></div>
+    <div class="card-title" style="margin-bottom:16px">${ico('info')} 汇率信息</div>
+    <div class="ratio-display">${ico('dollar','ico-sm')} 当前汇率 ${tip('影响所有成本和利润的换算，可在编辑配置中修改','tip-below tip-left')}：<strong>1 ${D} = ${a.dcRatio} ${C}</strong></div>
+    <div class="ratio-display">${ico('tag','ico-sm')} 单图成本 ${tip('成本配置中所有物品价格的合计','tip-below tip-left')}：<strong>${tD.toFixed(3)} D</strong> ≈ <strong style="color:var(--blue)">${tC.toFixed(1)} C</strong></div>
+    <div style="margin-top:14px"><button class="btn" id="edit-ratio-btn">${ico('settings','ico-sm')} 修改汇率</button></div>`;
+  grid.appendChild(c2);main.appendChild(grid);
+  document.getElementById('cv-c2d').onclick=()=>{convMode='c2d';render()};
+  document.getElementById('cv-d2c').onclick=()=>{convMode='d2c';render()};
+  document.getElementById('conv-input').oninput=refreshConv;
+  document.querySelectorAll('.pst').forEach(b=>{b.onclick=()=>{document.getElementById('conv-input').value=b.dataset.v;refreshConv()}});
+  document.getElementById('edit-ratio-btn').onclick=()=>{editingConfig=true;render()};
+}
+
+// ========== RECORDS TAB ==========
+function renderRecordsTab(main,a){
+  const wrap=document.createElement('div');
+  if(a.results.length){
+    const tp=a.results.reduce((s,r)=>s+(r.earning-r.cost),0),ap=tp/a.results.length;
+    const pcl=v=>v>=0?'color:var(--green)':'color:var(--red)',sgn=v=>v>=0?'+':'';
+    wrap.innerHTML=`<div class="summary-grid">
+      <div class="summary-card"><div class="card-bar amber"></div><div class="summary-label">总场次 ${tip('已记录的刷图总次数','tip-below tip-left')}</div><div class="summary-value" style="color:var(--amber)">${a.results.length}</div></div>
+      <div class="summary-card"><div class="card-bar green"></div><div class="summary-label">总利润 (D) ${tip('所有记录的利润合计','tip-below')}</div><div class="summary-value" style="${pcl(tp)}">${sgn(tp)}${tp.toFixed(3)}</div></div>
+      <div class="summary-card"><div class="card-bar green"></div><div class="summary-label">场均利润 (D) ${tip('总利润÷总场次','tip-below')}</div><div class="summary-value" style="${pcl(ap)}">${sgn(ap)}${ap.toFixed(3)}</div></div>
+      <div class="summary-card"><div class="card-bar blue"></div><div class="summary-label">场均利润 (C) ${tip('按当前汇率换算','tip-below tip-right')}</div><div class="summary-value" style="${pcl(ap)}">${sgn(ap)}${(ap*a.dcRatio).toFixed(1)}</div></div>
+    </div>`;
+  }
+  const bar=document.createElement('div');bar.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px';
+  bar.innerHTML=`<div style="font-size:13px;color:var(--text-secondary)">${ico('layers','ico-sm')} 共 ${a.results.length} 条记录</div><div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" id="add-res">${ico('plus','ico-sm')} 新增记录</button>${a.results.length?`<button class="btn btn-sm btn-danger" id="clr-res">${ico('trash','ico-sm')} 清空全部</button>`:''}</div>`;
+  wrap.appendChild(bar);main.appendChild(wrap);
+  const list=document.createElement('div');
+  if(a.results.length){
+    a.results.slice().reverse().forEach((r,ri)=>{
+      const i=a.results.length-1-ri,num=i+1,profit=r.earning-r.cost;
+      const pc=profit>=0?'var(--green)':'var(--red)',ps=profit>=0?'+':'',isExp=expandedRecord===r.id;
+      const el=document.createElement('div');el.className='record-item'+(isExp?' expanded':'');
+      let sum=`<div class="record-summary" data-rid="${r.id}">
+        <span class="record-num">#${num}</span>
+        <div class="record-chips">
+          <span class="record-chip"><span class="label">收益</span><span style="color:var(--amber)">${r.earning.toFixed(3)}D</span></span>
+          <span class="record-chip"><span class="label">成本</span><span style="color:var(--text-secondary)">${r.cost.toFixed(3)}D</span></span>
+          <span class="record-chip"><span class="label">利润</span><span style="color:${pc};font-weight:600">${ps}${profit.toFixed(3)}D</span></span>
+          <span class="record-chip" style="color:var(--text-dim);font-size:11px">${ico('clock','ico-sm')} ${fmtTime(r.time)}</span>
+        </div>
+        <div class="record-actions">
+          <button class="btn-icon btn-sm rec-edit" data-rid="${r.id}" title="编辑" style="width:24px;height:24px">${ico('edit','ico-sm')}</button>
+          <button class="btn-icon btn-sm danger rec-del" data-rid="${r.id}" title="删除" style="width:24px;height:24px">${ico('trash','ico-sm')}</button>
+        </div>
+        <span class="record-arrow">${ico('chevRight','ico-sm')}</span>
+      </div>`;
+      let det=`<div class="record-detail"><div class="detail-grid">
+        <div class="detail-item"><div class="dl">收益 (${D})</div><div class="dv" style="color:var(--amber)">${r.earning.toFixed(4)} D</div></div>
+        <div class="detail-item"><div class="dl">收益 (${C})</div><div class="dv" style="color:var(--blue)">${(r.earning*a.dcRatio).toFixed(1)} C</div></div>
+        <div class="detail-item"><div class="dl">成本 (${D})</div><div class="dv">${r.cost.toFixed(4)} D</div></div>
+        <div class="detail-item"><div class="dl">成本 (${C})</div><div class="dv">${(r.cost*a.dcRatio).toFixed(1)} C</div></div>
+        <div class="detail-item"><div class="dl">利润 (${D})</div><div class="dv" style="color:${pc}">${ps}${profit.toFixed(4)} D</div></div>
+        <div class="detail-item"><div class="dl">利润 (${C})</div><div class="dv" style="color:${pc}">${ps}${(profit*a.dcRatio).toFixed(1)} C</div></div>
+        <div class="detail-item"><div class="dl">${ico('clock','ico-sm')} 记录时间</div><div class="dv" style="font-size:13px">${fmtTime(r.time)}</div></div>
+        <div class="detail-item"><div class="dl">${ico('exchange','ico-sm')} 使用汇率</div><div class="dv">1D = ${r.ratio||a.dcRatio}C</div></div>
+      </div>`;
+      if(r.costItems&&r.costItems.length){
+        det+=`<div class="detail-note" style="margin-top:10px"><div class="dl">${ico('tag','ico-sm')} 成本明细</div><div class="detail-cost-list">`;
+        r.costItems.forEach(ci=>{det+=`<div class="detail-cost-item"><span style="color:var(--text-secondary)">${esc(ci.name)}</span><span style="font-family:var(--mono);color:var(--amber)">${ci.dVal.toFixed(3)}D</span></div>`});
+        det+=`</div></div>`;
+      }
+      if(r.note) det+=`<div class="detail-note"><div class="dl">${ico('note','ico-sm')} 备注</div><div class="dv">${esc(r.note)}</div></div>`;
+      det+=`</div>`;
+      el.innerHTML=sum+det;list.appendChild(el);
+    });
+  }else{
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">🗺️</div><div class="empty-text">还没有记录，点击「新增记录」开始追踪利润</div></div>`;
+  }
+  main.appendChild(list);
+  document.getElementById('add-res').onclick=()=>openRecordModal();
+  const cr=document.getElementById('clr-res');if(cr)cr.onclick=()=>{confirmDelete(`确定清空「<strong>${esc(a.name)}</strong>」的全部 <strong>${a.results.length}</strong> 条利润记录？此操作不可撤销。`,()=>{a.results=[];expandedRecord=null;save();render();toast('记录已清空')})};
+  document.querySelectorAll('.record-summary').forEach(el=>{el.onclick=e=>{if(e.target.closest('.rec-edit')||e.target.closest('.rec-del'))return;expandedRecord=expandedRecord===el.dataset.rid?null:el.dataset.rid;render()}});
+  document.querySelectorAll('.rec-edit').forEach(b=>{b.onclick=e=>{e.stopPropagation();openRecordModal(b.dataset.rid)}});
+  document.querySelectorAll('.rec-del').forEach(b=>{b.onclick=e=>{e.stopPropagation();const rid=b.dataset.rid;const rec=a.results.find(r=>r.id===rid);const idx=a.results.indexOf(rec);confirmDelete(`确定删除第 <strong>${idx+1}</strong> 条利润记录？此操作不可撤销。`,()=>{a.results=a.results.filter(r=>r.id!==rid);if(expandedRecord===rid)expandedRecord=null;save();render();toast('已删除')})}});
+}
+
+// ========== GUIDE TAB ==========
+function renderGuideTab(main,a){
+  const w=document.createElement('div');
+  w.innerHTML=`
+    <div class="guide-hero"><div class="guide-hero-icon">⚔</div><div class="guide-hero-title">欢迎使用 POE 刷图利润计算器</div><div class="guide-hero-sub">精确追踪每张图的投入成本与产出收益，告别模糊刷图，让每一把都心中有数。</div></div>
+    <div class="guide-steps">
+      <div class="guide-step"><div class="card-bar accent"></div><div class="guide-step-num">1</div><div class="guide-step-body"><div class="guide-step-title">创建刷图配置</div><div class="guide-step-desc">在左侧边栏点击 <code>+ 新建配置</code>，填写名称、地图和 D:C 汇率。支持多配置随时切换、<code>复制配置</code> 快速创建副本。</div><div class="guide-step-action"><button class="btn btn-primary btn-sm" onclick="editingConfig=true;render()">去编辑配置 →</button></div></div></div>
+      <div class="guide-step"><div class="card-bar amber"></div><div class="guide-step-num">2</div><div class="guide-step-body"><div class="guide-step-title">配置单图成本</div><div class="guide-step-desc">切换到 <code>成本配置</code> 页，添加每次开图消耗的物品。每个物品可选 <code>${C}</code> 或 <code>${D}</code> 为单位，系统自动换算。</div><div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"><span style="padding:3px 10px;border-radius:4px;font-size:12px;background:var(--amber-bg);color:var(--amber)">地图 30C</span><span style="padding:3px 10px;border-radius:4px;font-size:12px;background:var(--amber-bg);color:var(--amber)">迷雾宝珠 1D</span><span style="padding:3px 10px;border-radius:4px;font-size:12px;background:var(--amber-bg);color:var(--amber)">甲虫 1D</span><span style="padding:3px 10px;border-radius:4px;font-size:12px;background:var(--amber-bg);color:var(--amber)">星盘 0.1D</span><span style="padding:3px 10px;border-radius:4px;font-size:12px;background:var(--amber-bg);color:var(--amber)">通货钉子 0.46D</span></div><div class="guide-step-action"><button class="btn btn-sm" onclick="currentTab='cost';render()">去配置成本 →</button></div></div></div>
+      <div class="guide-step"><div class="card-bar blue"></div><div class="guide-step-num">3</div><div class="guide-step-body"><div class="guide-step-title">设定汇率与换算</div><div class="guide-step-desc">在 <code>汇率换算</code> 页查看和修改 ${D} 与 ${C} 的兑换比例，支持双向快速换算。</div><div class="guide-step-action"><button class="btn btn-sm" onclick="currentTab='converter';render()">去汇率换算 →</button></div></div></div>
+      <div class="guide-step"><div class="card-bar green"></div><div class="guide-step-num">4</div><div class="guide-step-body"><div class="guide-step-title">记录收益、追踪利润</div><div class="guide-step-desc">在 <code>利润记录</code> 页点击 <code>+ 新增记录</code>，输入本次 ${D} 收益。系统自动计算利润并保存成本快照，可添加备注。点击记录可展开查看详情。</div><div class="guide-step-action"><button class="btn btn-sm" onclick="currentTab='records';render()">去利润记录 →</button></div></div></div>
+    </div>
+    <div class="guide-tips"><div class="guide-tips-title">💡 使用技巧</div><div class="guide-tip-grid">
+      <div class="guide-tip"><div class="guide-tip-icon">🔄</div><div class="guide-tip-text"><strong>多配置切换</strong><br>左侧边栏创建多个配置，每个独立维护成本和记录。</div></div>
+      <div class="guide-tip"><div class="guide-tip-icon">📋</div><div class="guide-tip-text"><strong>复制配置</strong><br>基于现有配置快速创建副本，微调后对比不同方案。</div></div>
+      <div class="guide-tip"><div class="guide-tip-icon">💾</div><div class="guide-tip-text"><strong>自动保存</strong><br>数据自动保存在浏览器本地，关闭后不丢失。</div></div>
+      <div class="guide-tip"><div class="guide-tip-icon">📤</div><div class="guide-tip-text"><strong>导入导出</strong><br>侧边栏底部支持导出 JSON 备份和导入恢复，换电脑也不怕。</div></div>
+      <div class="guide-tip"><div class="guide-tip-icon">📝</div><div class="guide-tip-text"><strong>备注与快照</strong><br>新增记录时可添加备注，系统自动保存当时的成本明细快照。</div></div>
+      <div class="guide-tip"><div class="guide-tip-icon">📊</div><div class="guide-tip-text"><strong>实时统计</strong><br>利润记录页顶部实时显示总利润和场均利润。</div></div>
+    </div></div>
+    <div class="guide-start-bar"><div style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">准备好了？开始配置你的刷图方案吧！</div><button class="btn btn-primary" onclick="currentTab='cost';render()">开始使用 →</button></div>
+    <div class="author-card">
+      <div class="card-bar accent"></div>
+      <div class="author-card-info"><strong>作者：苑稳健</strong> · 联系 QQ：<strong>1175397524</strong></div>
+      <div class="author-card-msg">终有一天我要穿越到瓦尔克拉斯大陆，帮助娜扎拯救岳父 ⚔️</div>
+    </div>`;
+  main.appendChild(w);
+}
+
+// ========== MODAL ==========
+function openRecordModal(editId){
+  const a=AA(),isEdit=!!editId,rec=isEdit?a.results.find(r=>r.id===editId):null,costD=totalCostD();
+  let old=document.getElementById('modal-ov');if(old)old.remove();
+  const ov=document.createElement('div');ov.id='modal-ov';ov.className='modal-overlay';
+  const snap=a.items.map(i=>({name:i.name,unit:i.unit,price:i.price,dVal:iD(i,a.dcRatio)}));
+  ov.innerHTML=`<div class="modal">
+    <h3>${isEdit?`${ico('edit')} 编辑记录`:`${ico('plus')} 新增刷图记录`}</h3>
+    <div class="field"><label>本次收益 (${D}) ${tip('填写本次刷图获得的总${D}数量','tip-below tip-left')}</label><input type="number" step="0.01" placeholder="例如: 2.5" id="m-earning" class="big"></div>
+    <div class="modal-hint">当前单图成本: <span style="color:var(--amber);font-family:var(--mono)">${costD.toFixed(3)} D</span> ≈ <span style="color:var(--blue);font-family:var(--mono)">${(costD*a.dcRatio).toFixed(1)} C</span></div>
+    <div class="field"><label>${ico('note','ico-sm')} 备注（可选）</label><textarea id="m-note" placeholder="记录掉落信息、特殊情况等..."></textarea></div>
+    <div class="modal-actions"><button class="btn" id="m-cancel">取消</button><button class="btn btn-primary" id="m-ok">${ico('check','ico-sm')} ${isEdit?'保存修改':'确认添加'}</button></div>
+  </div>`;
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  document.body.appendChild(ov);
+  const eI=document.getElementById('m-earning'),nI=document.getElementById('m-note');
+  if(isEdit){eI.value=rec.earning;nI.value=rec.note||''}
+  eI.focus();
+  function submit(){const v=parseFloat(eI.value);if(isNaN(v)){toast('请输入有效数值');return}if(isEdit){rec.earning=v;rec.note=nI.value.trim()}else{a.results.push({id:uid(),earning:v,cost:costD,ratio:a.dcRatio,costItems:snap,note:nI.value.trim(),time:Date.now()})}ov.remove();save();render();toast(isEdit?'已更新':'已添加')}
+  eI.onkeydown=e=>{if(e.key==='Enter')submit()};
+  document.getElementById('m-cancel').onclick=()=>ov.remove();
+  document.getElementById('m-ok').onclick=submit;
+}
+
+function render(){renderSidebar();renderMain()}
+load();render();
+</script>
+</body>
+</html>

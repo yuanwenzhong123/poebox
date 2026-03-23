@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>攻坚通用利润计算器</title>
+<style>
+:root {
+  --bg:        #1e1e1e;
+  --bg2:       #262626;
+  --bg3:       #2f2f2f;
+  --bg4:       #383838;
+  --border:    #3d3d3d;
+  --border2:   #4a4a4a;
+  --text:      #ececec;
+  --text2:     #b4b4b4;
+  --text3:     #6e6e6e;
+  --accent:    #cc785c;
+  --accent-bg: rgba(204,120,92,0.15);
+  --accent-dim: rgba(204,120,92,0.08);
+  --accent-shadow: rgba(204,120,92,0.18);
+  --green:     #4caf7d;
+  --red:       #e05252;
+  --blue:      #5b9bd5;
+  --amber:     #d4a843;
+  --purple:    #9b72cf;
+  --font: -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;height:100vh;display:flex;overflow:hidden;}
+
+/* ═══════════ SIDEBAR ═══════════ */
+.sidebar{
+  width:240px;min-width:240px;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  height:100vh;
+}
+.sidebar-header{
+  padding:14px 16px 12px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.sidebar-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:15px;
+}
+.sidebar-title{font-size:14px;font-weight:700;color:var(--text);}
+
+.sidebar-search{
+  padding:10px 12px;
+  border-bottom:1px solid var(--border);
+}
+.search-input{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:7px;
+  color:var(--text2);
+  font-family:var(--font);
+  font-size:12px;
+  padding:6px 10px 6px 28px;
+  outline:none;
+  transition:border-color 0.15s,box-shadow 0.15s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 13 13' fill='none'%3E%3Ccircle cx='5.5' cy='5.5' r='4' stroke='%236e6e6e' stroke-width='1.4'/%3E%3Cpath d='M8.5 8.5L11 11' stroke='%236e6e6e' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:8px center;
+}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-shadow);}
+.search-input::placeholder{color:var(--text3);}
+
+.sidebar-list-label{
+  font-size:11px;color:var(--text3);
+  letter-spacing:0.08em;text-transform:uppercase;
+  padding:10px 16px 6px;
+}
+
+.sidebar-list{
+  flex:1;overflow-y:auto;padding:4px 8px;
+}
+.cfg-item{
+  padding:9px 10px;border-radius:8px;
+  cursor:pointer;
+  transition:background 0.12s;
+  margin-bottom:2px;
+  border:1px solid transparent;
+}
+.cfg-item:hover{background:var(--bg4);}
+.cfg-item.active{
+  background:var(--accent-bg);
+  border-color:rgba(204,120,92,0.3);
+}
+.cfg-item-name{
+  font-size:13px;font-weight:500;
+  color:var(--text2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.cfg-item.active .cfg-item-name{color:var(--accent);}
+.cfg-item-meta{font-size:11px;color:var(--text3);margin-top:3px;}
+.cfg-item.active .cfg-item-meta{color:rgba(204,120,92,0.6);}
+
+.sidebar-bottom{
+  padding:10px 8px;
+  border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:6px;
+}
+.btn-new-cfg{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:9px;border-radius:8px;background:var(--accent);color:#fff;
+  font-family:var(--font);font-size:13px;font-weight:500;
+  cursor:pointer;border:none;transition:all 0.15s;
+}
+.btn-new-cfg:hover{background:#b8684d;box-shadow:0 2px 8px var(--accent-shadow);}
+.sidebar-row{display:flex;gap:6px;}
+.sb-btn{
+  flex:1;background:var(--bg3);border:1px solid var(--border);
+  font-size:12px;padding:7px;border-radius:7px;
+  font-family:var(--font);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:all 0.15s;color:var(--text2);
+}
+.sb-btn:hover{background:var(--bg4);color:var(--text);}
+.sb-btn.danger{color:var(--red);background:transparent;}
+.sb-btn.danger:hover{background:rgba(224,82,82,0.08);border-color:var(--red);}
+
+/* ═══════════ MAIN ═══════════ */
+.main{flex:1;height:100vh;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
+
+.main-header{
+  padding:20px 28px 0;
+  border-bottom:1px solid var(--border);
+  background:var(--bg2);
+  flex-shrink:0;
+}
+.cfg-title-row{display:flex;align-items:center;gap:10px;margin-bottom:3px;}
+.cfg-title-input{
+  background:none;border:none;outline:none;
+  font-size:22px;font-weight:700;color:var(--text);
+  font-family:var(--font);letter-spacing:-0.01em;cursor:text;
+  min-width:60px;max-width:480px;
+  border-bottom:2px solid transparent;
+  transition:border-color 0.15s;padding:0 2px 2px;
+}
+.cfg-title-input:focus{border-bottom-color:var(--accent);}
+.cfg-subtitle{font-size:12px;color:var(--text3);margin-bottom:14px;}
+.cfg-subtitle span{color:var(--text2);}
+
+.tabs{display:flex;gap:0;align-items:flex-end;}
+.tab{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 15px 10px;
+  font-size:13px;color:var(--text3);
+  cursor:pointer;border:none;background:none;
+  font-family:var(--font);
+  border-bottom:2px solid transparent;
+  transition:all 0.15s;white-space:nowrap;
+}
+.tab:hover{color:var(--text2);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab svg{width:14px;height:14px;flex-shrink:0;}
+
+.main-body{flex:1;padding:22px 28px;overflow-y:auto;}
+
+/* ═══════════ PANELS ═══════════ */
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* Summary cards */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;margin-bottom:16px;
+}
+.stat-card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:16px 18px;
+  position:relative;overflow:hidden;
+  transition:border-color 0.3s;
+}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.stat-card.s-blue::before{background:var(--blue);}
+.stat-card.s-amber::before{background:var(--amber);}
+.stat-card.s-profit::before{background:var(--red);transition:background 0.3s;}
+.stat-card.s-profit.pos::before{background:var(--green);}
+.stat-card.s-profit.pos{border-color:rgba(76,175,125,0.35);}
+.stat-card.s-profit.neg{border-color:rgba(224,82,82,0.3);}
+.stat-lbl{font-size:11px;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;}
+.stat-val{font-size:28px;font-weight:700;letter-spacing:-0.02em;line-height:1;transition:color 0.3s;}
+.stat-val.gold{color:var(--amber);}
+.stat-val.green{color:var(--green);}
+.stat-val.red{color:var(--red);}
+.stat-unit{font-size:11px;color:var(--text3);margin-top:5px;}
+
+/* Calc card */
+.calc-card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:14px;overflow:hidden;
+}
+.calc-card-header{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 18px;border-bottom:1px solid var(--border);
+  flex-wrap:wrap;gap:8px;
+}
+.calc-card-icon{font-size:14px;color:var(--text3);}
+.calc-card-title{font-size:13px;font-weight:600;color:var(--text2);}
+.card-spacer{flex:1;}
+
+.cost-group{display:flex;align-items:center;gap:8px;}
+.cost-label{font-size:12px;color:var(--text3);}
+.cost-input{
+  width:84px;background:var(--bg);border:1px solid var(--border);
+  border-radius:6px;color:var(--text);font-family:var(--font);
+  font-size:13px;padding:5px 9px;outline:none;
+  -moz-appearance:textfield;transition:border-color 0.15s,box-shadow 0.15s;
+}
+.cost-input::-webkit-inner-spin-button{display:none;}
+.cost-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-shadow);}
+.cost-unit{font-size:12px;color:var(--text3);}
+
+.ext-links{display:flex;gap:5px;flex-wrap:wrap;}
+.ext-link{
+  display:inline-flex;align-items:center;gap:4px;
+  background:transparent;border:1px solid var(--border);
+  color:var(--text3);font-size:11px;padding:4px 8px;
+  border-radius:5px;cursor:pointer;text-decoration:none;
+  transition:all 0.15s;font-family:var(--font);
+}
+.ext-link:hover{border-color:var(--border2);color:var(--text2);background:var(--bg4);}
+.ext-link svg{width:9px;height:9px;}
+
+/* Sections */
+.sections-wrap{padding:14px 18px 0;}
+.section-block{margin-bottom:18px;}
+.section-head{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.sec-title-input{
+  background:transparent;border:none;
+  border-bottom:1px solid transparent;
+  font-size:11px;font-weight:600;letter-spacing:0.1em;
+  color:var(--text3);text-transform:uppercase;
+  font-family:var(--font);width:280px;padding:1px 0;outline:none;
+  transition:border-color 0.15s,color 0.15s;
+}
+.sec-title-input:focus{border-bottom-color:var(--accent);color:var(--text2);}
+.sec-line{flex:1;height:1px;background:var(--border);}
+
+/* Table */
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+th{
+  font-size:11px;font-weight:600;color:var(--text3);
+  letter-spacing:0.07em;text-transform:uppercase;
+  padding:8px 12px;border-bottom:1px solid var(--border);
+  background:rgba(30,30,30,0.5);text-align:left;
+}
+th.r,td.r{text-align:right;}
+th.c,td.c{text-align:center;}
+td{
+  padding:7px 12px;
+  border-bottom:1px solid rgba(61,61,61,0.4);
+  font-size:13px;color:var(--text);vertical-align:middle;
+}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,0.015);}
+.ci{
+  width:100%;background:transparent;border:none;
+  border-bottom:1px solid transparent;
+  color:var(--text);font-family:var(--font);font-size:13px;
+  padding:1px 0;outline:none;-moz-appearance:textfield;
+  transition:border-color 0.15s;
+}
+.ci::-webkit-inner-spin-button{display:none;}
+.ci:focus{border-bottom-color:var(--accent);}
+.ci.num{text-align:right;width:80px;}
+.ev-cell{font-weight:600;color:var(--amber);}
+.ev-cell.zero{color:var(--text3);font-weight:400;}
+.del-btn{
+  background:none;border:none;cursor:pointer;color:var(--text3);
+  font-size:12px;padding:3px 5px;border-radius:4px;
+  transition:color 0.15s,background 0.15s;
+}
+.del-btn:hover{color:var(--red);background:rgba(224,82,82,0.1);}
+.tbl-footer{
+  padding:6px 10px;border-top:1px solid var(--border);
+  background:rgba(30,30,30,0.3);
+}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  border-radius:7px;font-family:var(--font);font-size:13px;
+  padding:7px 13px;cursor:pointer;border:none;
+  transition:all 0.15s;white-space:nowrap;line-height:1;
+}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#b8684d;box-shadow:0 2px 8px var(--accent-shadow);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:hover{background:var(--bg4);color:var(--text);}
+.btn-danger{background:transparent;border:1px solid var(--border);color:var(--red);}
+.btn-danger:hover{background:rgba(224,82,82,0.08);border-color:var(--red);}
+.btn-sm{font-size:12px;padding:5px 10px;}
+.btn-xs{font-size:11px;padding:3px 8px;border-radius:5px;}
+
+.add-section-btn{
+  width:100%;padding:8px;margin:0 0 14px;
+  background:transparent;border:1px dashed var(--border);
+  border-radius:8px;color:var(--text3);font-size:12px;
+  font-family:var(--font);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:all 0.15s;
+}
+.add-section-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+
+/* Config panel */
+.config-card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:18px 20px;margin-bottom:14px;
+}
+.config-card-title{
+  font-size:12px;font-weight:600;color:var(--text2);
+  letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px;
+}
+.form-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.form-label{font-size:12px;color:var(--text2);min-width:72px;}
+.form-input{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:7px;color:var(--text);font-family:var(--font);
+  font-size:13px;padding:6px 10px;outline:none;
+  transition:border-color 0.15s,box-shadow 0.15s;
+  -moz-appearance:textfield;
+}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-shadow);}
+.form-input::-webkit-inner-spin-button{display:none;}
+
+/* History */
+.history-list{display:flex;flex-direction:column;gap:4px;}
+.history-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:7px;cursor:pointer;transition:all 0.15s;
+}
+.history-item:hover{border-color:var(--border2);background:var(--bg4);}
+.h-time{font-size:11px;color:var(--text3);white-space:nowrap;}
+.h-label{font-size:13px;color:var(--text2);flex:1;}
+.h-ev{font-size:12px;color:var(--amber);}
+.h-profit{font-size:12px;font-weight:600;}
+.h-empty{font-size:12px;color:var(--text3);text-align:center;padding:20px;}
+
+/* Guide */
+.guide-sec{margin-bottom:18px;}
+.guide-title{
+  font-size:15px;font-weight:700;color:var(--text);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.guide-body{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:16px 18px;
+  font-size:13px;color:var(--text2);line-height:1.75;
+}
+.guide-body h4{font-size:13px;font-weight:600;color:var(--text);margin:12px 0 5px;}
+.guide-body h4:first-child{margin-top:0;}
+.guide-body ul{padding-left:18px;margin:4px 0;}
+.guide-body li{margin-bottom:4px;}
+.guide-body code{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:4px;padding:1px 6px;font-size:12px;
+  color:var(--accent);font-family:monospace;
+}
+.guide-body a{color:var(--accent);text-decoration:none;}
+.guide-body a:hover{text-decoration:underline;}
+.tip-box{
+  background:rgba(204,120,92,0.07);border:1px solid rgba(204,120,92,0.25);
+  border-radius:8px;padding:11px 13px;margin-top:10px;
+  font-size:12px;color:var(--text2);line-height:1.65;
+}
+.tip-box strong{color:var(--accent);}
+
+/* Footer */
+.main-footer{
+  flex-shrink:0;
+  border-top:1px solid var(--border);
+  background:var(--bg2);
+  padding:12px 28px;
+}
+.footer-inner{
+  display:flex;flex-direction:column;gap:5px;
+}
+.footer-author{
+  display:flex;flex-direction:column;gap:4px;
+}
+.footer-info{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--text3);flex-wrap:wrap;
+}
+.footer-info strong{color:var(--text2);}
+.footer-qq{color:var(--accent) !important;font-family:monospace;}
+.footer-sep{color:var(--border2);}
+.footer-quote{
+  display:flex;align-items:flex-start;gap:6px;
+  font-size:11px;color:var(--text3);
+  line-height:1.6;
+}
+.footer-quote span:first-child{flex-shrink:0;margin-top:1px;}
+
+/* Author card */
+.author-card{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 20px;
+}
+.author-row{
+  display:flex;align-items:center;gap:10px;
+  flex-wrap:wrap;font-size:13px;color:var(--text2);
+  margin-bottom:8px;
+}
+.author-row strong{color:var(--text);}
+.author-qq{color:var(--accent) !important;font-family:monospace;letter-spacing:0.04em;}
+.author-dot{color:var(--border2);}
+.author-quote{
+  display:flex;align-items:flex-start;gap:7px;
+  font-size:12px;color:var(--text3);line-height:1.7;
+}
+.author-quote span:first-child{flex-shrink:0;}
+
+/* Divine icon override */
+.divine-icon{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,#3d2855,#2a1e38);
+  border:1px solid rgba(155,114,207,0.35);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+
+/* Toast */
+.toast{
+  background:var(--bg3);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+.divine-card-header{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px 12px;
+}
+.divine-icon{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,#3a2a3a,#2a1e2e);
+  border:1px solid rgba(204,120,92,0.3);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.divine-card-title{
+  font-size:15px;font-weight:700;color:var(--text);
+}
+.divine-divider{height:1px;background:var(--border);margin:0 18px;}
+.divine-body{padding:16px 18px;}
+.divine-label{
+  font-size:12px;color:var(--text3);
+  margin-bottom:8px;
+}
+.divine-select-wrap{
+  position:relative;
+  margin-bottom:14px;
+}
+.divine-select{
+  width:100%;
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  font-family:var(--font);
+  font-size:14px;font-weight:500;
+  padding:10px 36px 10px 14px;
+  outline:none;
+  appearance:none;-webkit-appearance:none;
+  cursor:pointer;
+  transition:border-color 0.15s,box-shadow 0.15s;
+}
+.divine-select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-shadow);
+}
+.divine-select:hover{border-color:var(--border2);}
+.divine-select-arrow{
+  position:absolute;right:12px;top:50%;
+  transform:translateY(-50%);
+  color:var(--text3);pointer-events:none;
+}
+.divine-info-box{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  border-left:3px solid var(--accent);
+  border-radius:7px;
+  padding:12px 14px;
+}
+.divine-info-title{
+  font-size:12px;font-weight:600;color:var(--accent);
+  margin-bottom:6px;
+}
+.divine-info-text{
+  font-size:12px;color:var(--text2);line-height:1.7;
+}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:26px;left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text);font-size:13px;padding:8px 18px;
+  border-radius:8px;opacity:0;
+  transition:opacity 0.25s,transform 0.25s;
+  pointer-events:none;z-index:9999;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.ok{border-color:var(--green);color:var(--green);}
+.toast.warn{border-color:var(--amber);color:var(--amber);}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-icon">⚗️</div>
+    <span class="sidebar-title">攻坚计算器</span>
+  </div>
+  <div class="sidebar-search">
+    <input class="search-input" id="search-input" type="text" placeholder="搜索配置…" oninput="filterConfigs(this.value)">
+  </div>
+  <div class="sidebar-list-label">配置列表</div>
+  <div class="sidebar-list" id="sidebar-list"></div>
+  <div class="sidebar-bottom">
+    <button class="btn-new-cfg" onclick="newConfig()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 1v11M1 6.5h11"/></svg>
+      新建配置
+    </button>
+    <div class="sidebar-row">
+      <button class="sb-btn" onclick="duplicateConfig()" title="复制当前配置">📋 复制</button>
+      <button class="sb-btn danger" onclick="deleteActiveConfig()" title="删除当前配置">🗑️ 删除</button>
+    </div>
+    <div class="sidebar-row">
+      <button class="sb-btn" onclick="exportConfig()" title="导出配置为JSON文件">📥 导出</button>
+      <button class="sb-btn" onclick="importConfig()" title="从JSON文件导入配置">📤 导入</button>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="main-header">
+    <div class="cfg-title-row">
+      <input class="cfg-title-input" id="cfg-title" value="未命名配置"
+        oninput="onTitleChange(this.value)" title="点击编辑名称">
+    </div>
+    <div class="cfg-subtitle">点击名称可编辑 · <span id="sub-sections">0 个分组</span> · <span id="sub-items">0 个物品</span></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('calc',this)">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        物品配置
+      </button>
+      <button class="tab" onclick="switchTab('stats',this)">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11V7M5.5 11V4M9 11V7M12.5 11V2"/></svg>
+        汇总统计
+      </button>
+      <button class="tab" onclick="switchTab('config',this)">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="2"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M3.2 3.2l1.4 1.4M9.4 9.4l1.4 1.4M3.2 10.8l1.4-1.4M9.4 4.6l1.4-1.4"/></svg>
+        配置管理
+      </button>
+      <button class="tab" onclick="switchTab('history',this)">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5V7l2 1.5"/></svg>
+        修改记录
+      </button>
+      <button class="tab" onclick="switchTab('guide',this)">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 6v4M7 4.5v.5"/></svg>
+        使用引导
+      </button>
+    </div>
+  </div>
+
+  <div class="main-body">
+
+    <!-- ── TAB: 物品配置 ── -->
+    <div class="panel active" id="panel-calc">
+      <div class="stats-grid">
+        <div class="stat-card s-blue">
+          <div class="stat-lbl">总期望收益</div>
+          <div class="stat-val gold" id="total-ev">0.00</div>
+          <div class="stat-unit">Divine / 次</div>
+        </div>
+        <div class="stat-card s-amber">
+          <div class="stat-lbl">入场成本</div>
+          <div class="stat-val gold" id="total-cost">2.00</div>
+          <div class="stat-unit">Divine / 次</div>
+        </div>
+        <div class="stat-card s-profit" id="profit-card">
+          <div class="stat-lbl">期望利润</div>
+          <div class="stat-val red" id="total-profit">-2.00</div>
+          <div class="stat-unit">Divine / 次</div>
+        </div>
+      </div>
+
+      <div class="calc-card">
+        <div class="calc-card-header">
+          <span class="calc-card-icon">📋</span>
+          <span class="calc-card-title">物品期望值表</span>
+          <div class="card-spacer"></div>
+          <div class="cost-group">
+            <span class="cost-label">入场成本</span>
+            <input type="number" class="cost-input" id="cost" value="2" min="0" step="0.1" oninput="onCostChange()">
+            <span class="cost-unit">div/次</span>
+          </div>
+          <div class="ext-links">
+            <a class="ext-link" href="https://poe.ninja/economy/standard/unique-accessories" target="_blank">
+              <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 1H1v7h7V5M5 .5h3v3M8 .5L3.5 5"/></svg>独特饰品
+            </a>
+            <a class="ext-link" href="https://poe.ninja/economy/standard/unique-jewels" target="_blank">
+              <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 1H1v7h7V5M5 .5h3v3M8 .5L3.5 5"/></svg>独特宝石
+            </a>
+            <a class="ext-link" href="https://poe.ninja/economy/standard/skill-gems" target="_blank">
+              <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 1H1v7h7V5M5 .5h3v3M8 .5L3.5 5"/></svg>技能宝石
+            </a>
+            <a class="ext-link" href="https://poe.ninja/economy/standard/currency" target="_blank">
+              <svg viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 1H1v7h7V5M5 .5h3v3M8 .5L3.5 5"/></svg>通货
+            </a>
+          </div>
+        </div>
+        <div class="sections-wrap" id="sections"></div>
+        <div style="padding:0 18px 14px;">
+          <button class="add-section-btn" onclick="addSection()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 1v10M1 6h10"/></svg>
+            新增分组
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: 汇总统计 ── -->
+    <div class="panel" id="panel-stats">
+      <div class="stats-grid">
+        <div class="stat-card s-blue">
+          <div class="stat-lbl">总期望收益</div>
+          <div class="stat-val gold" id="s-ev">0.00</div>
+          <div class="stat-unit">Divine / 次</div>
+        </div>
+        <div class="stat-card s-amber">
+          <div class="stat-lbl">入场成本</div>
+          <div class="stat-val gold" id="s-cost">2.00</div>
+          <div class="stat-unit">Divine / 次</div>
+        </div>
+        <div class="stat-card s-profit" id="s-profit-card">
+          <div class="stat-lbl">期望利润</div>
+          <div class="stat-val red" id="s-profit">-2.00</div>
+          <div class="stat-unit">Divine / 次</div>
+        </div>
+      </div>
+      <div class="calc-card">
+        <div class="calc-card-header">
+          <span class="calc-card-icon">📊</span>
+          <span class="calc-card-title">各分组期望明细</span>
+        </div>
+        <div style="padding:16px 18px;" id="stats-detail"></div>
+      </div>
+      <div class="calc-card">
+        <div class="calc-card-header">
+          <span class="calc-card-icon">🏆</span>
+          <span class="calc-card-title">Top 5 高期望物品</span>
+        </div>
+        <div style="padding:16px 18px;" id="stats-top5"></div>
+      </div>
+    </div>
+
+    <!-- ── TAB: 配置管理 ── -->
+    <div class="panel" id="panel-config">
+      <div class="config-card">
+        <div class="config-card-title">当前配置设置</div>
+        <div class="form-row">
+          <span class="form-label">配置名称</span>
+          <input class="form-input" id="cfg-name-field" type="text" placeholder="输入配置名称…" style="width:220px"
+            oninput="onTitleChange(this.value)">
+        </div>
+        <div class="form-row">
+          <span class="form-label">入场成本</span>
+          <input class="form-input" id="cost2" type="number" min="0" step="0.1" value="2"
+            oninput="document.getElementById('cost').value=this.value;onCostChange()">
+          <span style="font-size:12px;color:var(--text3);">Divine / 次</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button class="btn btn-primary" onclick="saveConfig()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 10h8V4.5L8.5 2H2v8z"/><path d="M4 2v3h4V2M3 7h6v3H3z"/></svg>
+            保存配置
+          </button>
+          <button class="btn btn-ghost" onclick="restoreDefault()">↺ 恢复默认数据</button>
+        </div>
+      </div>
+      <div class="config-card">
+        <div class="config-card-title">所有配置</div>
+        <div id="all-configs-list"></div>
+      </div>
+    </div>
+
+    <!-- ── TAB: 修改记录 ── -->
+    <div class="panel" id="panel-history">
+      <div class="calc-card">
+        <div class="calc-card-header">
+          <span class="calc-card-icon">🕐</span>
+          <span class="calc-card-title">修改记录</span>
+          <div class="card-spacer"></div>
+          <button class="btn btn-danger btn-sm" onclick="clearHistory()">清空记录</button>
+        </div>
+        <div style="padding:12px 16px;">
+          <div class="history-list" id="history-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: 使用引导 ── -->
+    <div class="panel" id="panel-guide">
+      <div class="guide-sec">
+        <div class="guide-title">🚀 快速开始</div>
+        <div class="guide-body">
+          <h4>这是什么工具？</h4>
+          <p>攻坚通用利润计算器用于计算 Path of Exile 中各类攻坚（梅文、大师等）的<strong>期望利润</strong>。通过输入掉落物品的概率和当前市场售价，实时计算每次攻坚的期望收益与利润。</p>
+          <h4>基本流程</h4>
+          <ul>
+            <li>在左侧点击「<strong>新建配置</strong>」创建一个攻坚方案</li>
+            <li>在「物品配置」标签页中，按分组填入每个掉落物品的名称、掉落概率（%）和当前售价（div）</li>
+            <li>在右上角输入「<strong>入场成本</strong>」（每次攻坚消耗的 Divine 数量）</li>
+            <li>顶部三张卡片实时显示「总期望收益」「入场成本」和「期望利润」</li>
+          </ul>
+          <div class="tip-box">
+            <strong>💡 提示：</strong>同一分组内若是"必掉一个"（如梅文必掉独特），各物品概率之和应等于 100%。若是独立概率（如额外掉落），则每行独立填写实际触发概率。
+          </div>
+        </div>
+      </div>
+      <div class="guide-sec">
+        <div class="guide-title">📋 物品配置说明</div>
+        <div class="guide-body">
+          <h4>分组管理</h4>
+          <ul>
+            <li>「梅文必掉独特」— 概率之和应为 100%</li>
+            <li>「超级大师独特」— 有概率触发的额外掉落</li>
+            <li>「副产品/通货」— 每次都有的小收益，独立概率填写</li>
+          </ul>
+          <h4>期望值计算公式</h4>
+          <p>每个物品的期望值 = <code>概率(%) ÷ 100 × 单价(div)</code></p>
+          <p>总期望收益 = 所有物品期望值之和</p>
+          <p>期望利润 = 总期望收益 − 入场成本</p>
+          <div class="tip-box">
+            <strong>📈 建议：</strong>价格数据请从 poe.ninja 实时查询，右上角快捷链接可直达各页面。价格波动较大时请及时更新。
+          </div>
+        </div>
+      </div>
+      <div class="guide-sec">
+        <div class="guide-title">💾 配置管理</div>
+        <div class="guide-body">
+          <h4>多配置切换</h4>
+          <p>左侧列表支持保存多个方案，分别保存「梅文攻坚」「破碎神器」「传奇地图」等不同玩法，一键切换对比利润。</p>
+          <ul>
+            <li><strong>新建配置</strong>：创建空白配置（内含默认示例数据）</li>
+            <li><strong>复制配置</strong>：基于当前配置创建副本，方便对比调整参数</li>
+            <li><strong>保存</strong>：在「配置管理」标签修改名称后点击保存</li>
+            <li><strong>删除</strong>：底部删除按钮移除当前配置</li>
+          </ul>
+          <h4>修改记录</h4>
+          <p>每次修改自动记录快照，可在「修改记录」标签点击任意条目恢复历史状态，最多保留 50 条。</p>
+        </div>
+      </div>
+      <div class="guide-sec">
+        <div class="guide-title">🔗 外部资源</div>
+        <div class="guide-body">
+          <ul>
+            <li><a href="https://poe.ninja/economy/standard/unique-accessories" target="_blank">独特饰品价格 — poe.ninja</a></li>
+            <li><a href="https://poe.ninja/economy/standard/unique-jewels" target="_blank">独特宝石价格 — poe.ninja</a></li>
+            <li><a href="https://poe.ninja/economy/standard/skill-gems" target="_blank">技能宝石价格 — poe.ninja</a></li>
+            <li><a href="https://poe.ninja/economy/standard/currency" target="_blank">通货价格 — poe.ninja</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 作者信息 -->
+      <div class="guide-sec">
+        <div class="author-card">
+          <div class="author-row">
+            <span class="author-item">👤 作者：<strong>苑稳健</strong></span>
+            <span class="author-dot">·</span>
+            <span class="author-item">💬 联系 QQ：<strong class="author-qq">1175397524</strong></span>
+          </div>
+          <div class="author-quote">
+            <span>⚔️</span>
+            <span>终有一天我要穿越到瓦尔克拉斯大陆，帮助娜扎拯救岳父。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="import-file-input" accept=".json" style="display:none" onchange="handleImportFile(this)">
+
+<script>
+/* ════ DEFAULT DATA ════ */
+const DEFAULT_SECTIONS = [
+  { title: '梅文保证独特 · 必掉一个', rows: [
+    { name: '愤怒的遗产',     prob: 44,  price: 0 },
+    { name: '格雷文的秘密',   prob: 16,  price: 0 },
+    { name: '阿恩的痛苦',     prob: 16,  price: 0 },
+    { name: '奥莱西亚的喜悦', prob: 16,  price: 0 },
+    { name: '替身伪装',       prob: 7,   price: 0 },
+    { name: '回声锻造',       prob: 1,   price: 0 },
+  ]},
+  { title: '超级大师独特', rows: [
+    { name: '维里迪的面纱',       prob: 50,  price: 0 },
+    { name: '不可能的逃脱',       prob: 30,  price: 0 },
+    { name: '女神的恩典',         prob: 18,  price: 0 },
+    { name: '发育',               prob: 2,   price: 0 },
+    { name: '觉醒支援宝石（4%）', prob: 4,   price: 0 },
+    { name: '闪亮圣物钥匙',       prob: 1.5, price: 0 },
+    { name: '潜力奇珍',           prob: 5,   price: 0 },
+  ]},
+  { title: '额外掉落', rows: [
+    { name: '日蚀支持',     prob: 2,  price: 0 },
+    { name: '反转规则支持', prob: 10, price: 0 },
+    { name: '冲突之球',     prob: 30, price: 0 },
+    { name: '吉祥的抱负',   prob: 10, price: 0 },
+  ]}
+];
+
+/* ════ STATE ════ */
+let sections = cloneData(DEFAULT_SECTIONS);
+let cost = 2;
+let configs  = loadLS('ysg_configs', []);
+let activeId = loadLS('ysg_active', null);
+let history  = loadLS('ysg_history', []);
+
+/* ════ HELPERS ════ */
+function loadLS(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
+function saveLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+function cloneData(d){return JSON.parse(JSON.stringify(d));}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+
+/* ════ TABS ════ */
+function switchTab(name, el) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  el.classList.add('active');
+  if(name==='stats') renderStats();
+  if(name==='config') renderAllConfigs();
+  if(name==='history') renderHistory();
+}
+
+/* ════ SIDEBAR ════ */
+function cfgEV(cfg){
+  return cfg.sections.reduce((s,sec)=>s+sec.rows.reduce((ss,r)=>ss+(r.prob/100)*r.price,0),0);
+}
+
+function renderSidebar(filter) {
+  const list = document.getElementById('sidebar-list');
+  list.innerHTML = '';
+  const q = (filter||'').toLowerCase();
+  const show = configs.filter(c=>!q||c.name.toLowerCase().includes(q));
+  if(!show.length){
+    list.innerHTML=`<div style="font-size:12px;color:var(--text3);padding:12px 10px">${q?'无匹配结果':'暂无配置，点击「新建配置」创建'}</div>`;
+    return;
+  }
+  show.forEach(cfg=>{
+    const el=document.createElement('div');
+    el.className='cfg-item'+(cfg.id===activeId?' active':'');
+    const ev=cfgEV(cfg).toFixed(2);
+    const profit=(cfgEV(cfg)-(cfg.cost||2)).toFixed(2);
+    const pColor=parseFloat(profit)>=0?'var(--green)':'var(--red)';
+    const items=cfg.sections.reduce((a,s)=>a+s.rows.length,0);
+    el.innerHTML=`<div class="cfg-item-name">${esc(cfg.name)}</div>
+      <div class="cfg-item-meta">${cfg.sections.length}分组·${items}物品·<span style="color:${pColor}">${parseFloat(profit)>=0?'+':''}${profit}D</span></div>`;
+    el.onclick=()=>loadConfig(cfg.id);
+    list.appendChild(el);
+  });
+}
+
+function filterConfigs(q){renderSidebar(q);}
+
+/* ════ CONFIG CRUD ════ */
+function getActiveCfg(){return configs.find(c=>c.id===activeId);}
+
+function newConfig(){
+  const id='cfg_'+Date.now();
+  configs.push({id,name:'未命名配置',cost:2,sections:cloneData(DEFAULT_SECTIONS),savedAt:Date.now()});
+  saveLS('ysg_configs',configs);
+  loadConfig(id);
+  toast('已创建新配置','ok');
+}
+
+function loadConfig(id){
+  const cfg=configs.find(c=>c.id===id);
+  if(!cfg) return;
+  activeId=id; saveLS('ysg_active',id);
+  sections=cloneData(cfg.sections);
+  cost=cfg.cost||2;
+  document.getElementById('cost').value=cost;
+  document.getElementById('cost2').value=cost;
+  document.getElementById('cfg-title').value=cfg.name;
+  document.getElementById('cfg-name-field').value=cfg.name;
+  renderSidebar(); render(); updateSubtitle();
+  toast('已载入：'+cfg.name,'ok');
+}
+
+function saveConfig(){
+  const name=(document.getElementById('cfg-name-field').value||document.getElementById('cfg-title').value||'').trim()||'未命名配置';
+  const ex=getActiveCfg();
+  if(ex){ex.name=name;ex.cost=cost;ex.sections=cloneData(sections);ex.savedAt=Date.now();}
+  else{const id='cfg_'+Date.now();configs.push({id,name,cost,sections:cloneData(sections),savedAt:Date.now()});activeId=id;}
+  saveLS('ysg_configs',configs);saveLS('ysg_active',activeId);
+  document.getElementById('cfg-title').value=name;
+  document.getElementById('cfg-name-field').value=name;
+  renderSidebar();pushHistory('保存配置: '+name);toast('配置已保存','ok');
+}
+
+function duplicateConfig(){
+  const src=getActiveCfg();
+  if(!src){toast('请先选择一个配置','warn');return;}
+  const id='cfg_'+Date.now();
+  const name=src.name+' (副本)';
+  configs.push({id,name,cost:src.cost,sections:cloneData(src.sections),savedAt:Date.now()});
+  saveLS('ysg_configs',configs);
+  loadConfig(id);
+  toast('已复制：'+name,'ok');
+}
+
+function deleteActiveConfig(){
+  if(!activeId){toast('没有选中的配置','warn');return;}
+  const cfg=getActiveCfg();
+  if(!cfg||!confirm('确认删除「'+cfg.name+'」？')) return;
+  configs=configs.filter(c=>c.id!==activeId);
+  saveLS('ysg_configs',configs);
+  activeId=configs.length>0?configs[configs.length-1].id:null;
+  saveLS('ysg_active',activeId);
+  if(activeId) loadConfig(activeId);
+  else{sections=cloneData(DEFAULT_SECTIONS);cost=2;render();renderSidebar();}
+  toast('已删除：'+cfg.name);
+}
+
+function onTitleChange(v){
+  const cfg=getActiveCfg();
+  if(cfg){cfg.name=v;saveLS('ysg_configs',configs);renderSidebar();}
+  document.getElementById('cfg-title').value=v;
+  document.getElementById('cfg-name-field').value=v;
+}
+
+function restoreDefault(){
+  sections=cloneData(DEFAULT_SECTIONS);cost=2;
+  document.getElementById('cost').value=2;
+  document.getElementById('cost2').value=2;
+  render();updateSubtitle();toast('已恢复默认数据','warn');
+}
+
+function renderAllConfigs(){
+  const wrap=document.getElementById('all-configs-list');
+  if(!configs.length){wrap.innerHTML='<div style="font-size:12px;color:var(--text3)">暂无保存的配置</div>';return;}
+  wrap.innerHTML=configs.map(cfg=>{
+    const ev=cfgEV(cfg).toFixed(2);
+    const profit=(cfgEV(cfg)-(cfg.cost||2)).toFixed(2);
+    const pColor=parseFloat(profit)>=0?'var(--green)':'var(--red)';
+    const isActive=cfg.id===activeId;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${isActive?'var(--accent-bg)':'var(--bg2)'};border:1px solid ${isActive?'rgba(204,120,92,0.3)':'var(--border)'};border-radius:7px;margin-bottom:6px;">
+      <div style="flex:1">
+        <div style="font-size:13px;color:${isActive?'var(--accent)':'var(--text)'};font-weight:500">${esc(cfg.name)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">EV ${ev}D · 利润 <span style="color:${pColor}">${parseFloat(profit)>=0?'+':''}${profit}D</span></div>
+      </div>
+      <button class="btn btn-ghost btn-xs" onclick="loadConfig('${cfg.id}')">载入</button>
+      <button class="btn btn-danger btn-xs" onclick="delCfgById('${cfg.id}')">删除</button>
+    </div>`;
+  }).join('');
+}
+
+function delCfgById(id){
+  const cfg=configs.find(c=>c.id===id);
+  if(!cfg||!confirm('确认删除「'+cfg.name+'」？')) return;
+  configs=configs.filter(c=>c.id!==id);
+  saveLS('ysg_configs',configs);
+  if(activeId===id){activeId=configs.length>0?configs[0].id:null;saveLS('ysg_active',activeId);if(activeId)loadConfig(activeId);else{sections=cloneData(DEFAULT_SECTIONS);cost=2;render();}}
+  renderSidebar();renderAllConfigs();toast('已删除');
+}
+
+/* ════ HISTORY ════ */
+function pushHistory(label){
+  const ev=calcEV();const profit=ev-cost;
+  history.unshift({time:new Date().toLocaleString('zh-CN',{hour12:false}),label,ev:ev.toFixed(2),profit:profit.toFixed(2),positive:profit>=0,sections:cloneData(sections),cost});
+  if(history.length>50)history.length=50;
+  saveLS('ysg_history',history);renderHistory();
+}
+
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!history.length){el.innerHTML='<div class="h-empty">暂无修改记录</div>';return;}
+  el.innerHTML=history.map((h,i)=>`
+    <div class="history-item" onclick="restoreHistory(${i})" title="点击恢复此状态">
+      <span class="h-time">${h.time}</span>
+      <span class="h-label">${esc(h.label)}</span>
+      <span class="h-ev">EV ${h.ev}</span>
+      <span class="h-profit" style="color:${h.positive?'var(--green)':'var(--red)'}">${h.positive?'+':''}${h.profit} div</span>
+    </div>`).join('');
+}
+
+function restoreHistory(i){
+  const h=history[i];sections=cloneData(h.sections);cost=h.cost;
+  document.getElementById('cost').value=cost;
+  document.getElementById('cost2').value=cost;
+  render();toast('已恢复至：'+h.time,'warn');
+}
+
+function clearHistory(){history=[];saveLS('ysg_history',[]);renderHistory();toast('记录已清空');}
+
+/* ════ CALC ════ */
+function calcEV(){return sections.reduce((s,sec)=>s+sec.rows.reduce((ss,r)=>ss+(r.prob/100)*r.price,0),0);}
+
+function calc(){
+  let totalEV=0;
+  sections.forEach((sec,si)=>{
+    sec.rows.forEach((row,ri)=>{
+      const ev=(row.prob/100)*row.price;totalEV+=ev;
+      const el=document.getElementById(`ev-${si}-${ri}`);
+      if(el){el.textContent=ev.toFixed(3);el.className='r ev-cell'+(ev>0?'':' zero');}
+    });
+  });
+  cost=parseFloat(document.getElementById('cost').value)||0;
+  document.getElementById('cost2').value=cost;
+  const profit=totalEV-cost;
+  document.getElementById('total-ev').textContent=totalEV.toFixed(2);
+  document.getElementById('total-cost').textContent=cost.toFixed(2);
+  const pe=document.getElementById('total-profit');
+  const pc=document.getElementById('profit-card');
+  pe.textContent=(profit>=0?'+':'')+profit.toFixed(2);
+  pe.className='stat-val '+(profit>0?'green':profit<0?'red':'gold');
+  pc.className='stat-card s-profit'+(profit>0?' pos':profit<0?' neg':'');
+  renderSidebar(document.getElementById('search-input').value);
+  updateSubtitle();
+}
+
+function updateSubtitle(){
+  const items=sections.reduce((a,s)=>a+s.rows.length,0);
+  document.getElementById('sub-sections').textContent=sections.length+' 个分组';
+  document.getElementById('sub-items').textContent=items+' 个物品';
+}
+
+let histTimer;
+function scheduleHistoryPush(label){clearTimeout(histTimer);histTimer=setTimeout(()=>pushHistory(label),1500);}
+function onCostChange(){cost=parseFloat(document.getElementById('cost').value)||0;document.getElementById('cost2').value=cost;calc();scheduleHistoryPush('修改入场成本');}
+
+/* ════ STATS ════ */
+function renderStats(){
+  const totalEV=calcEV(),profit=totalEV-cost;
+  document.getElementById('s-ev').textContent=totalEV.toFixed(2);
+  document.getElementById('s-cost').textContent=cost.toFixed(2);
+  const sp=document.getElementById('s-profit');
+  sp.textContent=(profit>=0?'+':'')+profit.toFixed(2);
+  sp.className='stat-val '+(profit>0?'green':profit<0?'red':'gold');
+  document.getElementById('s-profit-card').className='stat-card s-profit'+(profit>0?' pos':profit<0?' neg':'');
+
+  const det=document.getElementById('stats-detail');
+  det.innerHTML=sections.map(sec=>{
+    const secEV=sec.rows.reduce((s,r)=>s+(r.prob/100)*r.price,0);
+    const pct=totalEV>0?(secEV/totalEV*100).toFixed(1):0;
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:5px">
+        <span>${esc(sec.title)}</span><span style="color:var(--amber)">${secEV.toFixed(3)} div (${pct}%)</span>
+      </div>
+      <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:3px;transition:width 0.5s cubic-bezier(.4,0,.2,1)"></div>
+      </div></div>`;
+  }).join('');
+
+  const allRows=[];
+  sections.forEach(sec=>sec.rows.forEach(r=>allRows.push({name:r.name,ev:(r.prob/100)*r.price,prob:r.prob})));
+  allRows.sort((a,b)=>b.ev-a.ev);
+  const top5=document.getElementById('stats-top5');
+  const maxEV=allRows[0]?.ev||1;
+  top5.innerHTML=allRows.slice(0,5).map((r,i)=>{
+    const w=maxEV>0?(r.ev/maxEV*100).toFixed(1):0;
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:11px;color:var(--text3);width:16px;text-align:right">${i+1}</span>
+      <span style="font-size:13px;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.name)}</span>
+      <span style="font-size:11px;color:var(--text3)">${r.prob}%</span>
+      <div style="width:100px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden;flex-shrink:0">
+        <div style="height:100%;width:${w}%;background:var(--amber);border-radius:3px"></div>
+      </div>
+      <span style="font-size:13px;color:var(--amber);width:56px;text-align:right">${r.ev.toFixed(3)}</span>
+    </div>`;
+  }).join('')||'<div style="font-size:12px;color:var(--text3)">暂无数据，请先填写价格</div>';
+}
+
+/* ════ RENDER ════ */
+function render(){
+  const container=document.getElementById('sections');
+  container.innerHTML='';
+  sections.forEach((sec,si)=>{
+    const div=document.createElement('div');
+    div.className='section-block';
+    div.innerHTML=`
+      <div class="section-head">
+        <input class="sec-title-input" value="${esc(sec.title)}" oninput="sections[${si}].title=this.value;scheduleHistoryPush('修改分组名称')">
+        <div class="sec-line"></div>
+        ${sections.length>1?`<button class="btn btn-danger btn-xs" onclick="removeSection(${si})">删除分组</button>`:''}
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <colgroup><col style="width:36%"><col style="width:14%"><col style="width:17%"><col style="width:17%"><col style="width:16%"></colgroup>
+          <thead><tr><th>物品名称</th><th class="r">概率 (%)</th><th class="r">价格 (div)</th><th class="r">期望值</th><th class="c">操作</th></tr></thead>
+          <tbody id="tbody-${si}"></tbody>
+        </table>
+        <div class="tbl-footer">
+          <button class="btn btn-ghost btn-xs" onclick="addRow(${si})" style="gap:5px">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 1v8M1 5h8"/></svg>新增行
+          </button>
+        </div>
+      </div>`;
+    container.appendChild(div);
+    const tbody=document.getElementById(`tbody-${si}`);
+    sec.rows.forEach((row,ri)=>{
+      const ev=(row.prob/100)*row.price;
+      const tr=document.createElement('tr');
+      tr.innerHTML=`
+        <td><input class="ci" value="${esc(row.name)}" oninput="sections[${si}].rows[${ri}].name=this.value;scheduleHistoryPush('修改物品名称')"></td>
+        <td class="r"><input class="ci num" type="number" min="0" max="100" step="0.1" value="${row.prob}" oninput="sections[${si}].rows[${ri}].prob=parseFloat(this.value)||0;calc();scheduleHistoryPush('修改概率')"></td>
+        <td class="r"><input class="ci num" type="number" min="0" step="0.01" value="${row.price}" oninput="sections[${si}].rows[${ri}].price=parseFloat(this.value)||0;calc();scheduleHistoryPush('修改价格')"></td>
+        <td class="r ev-cell${ev>0?'':' zero'}" id="ev-${si}-${ri}">${ev.toFixed(3)}</td>
+        <td class="c"><button class="del-btn" onclick="removeRow(${si},${ri})">✕</button></td>`;
+      tbody.appendChild(tr);
+    });
+  });
+  calc();
+}
+
+function addRow(si){sections[si].rows.push({name:'新物品',prob:0,price:0});render();pushHistory('新增行至 '+sections[si].title);}
+function removeRow(si,ri){const name=sections[si].rows[ri].name;sections[si].rows.splice(ri,1);render();pushHistory('删除行: '+name);}
+function addSection(){sections.push({title:'新分组',rows:[{name:'新物品',prob:0,price:0}]});render();pushHistory('新增分组');}
+function removeSection(si){const title=sections[si].title;sections.splice(si,1);render();pushHistory('删除分组: '+title);}
+
+/* ════ TOAST ════ */
+let toastTimer;
+function toast(msg,type){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast show'+(type?' '+type:'');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>{el.className='toast';},2200);
+}
+
+/* ════ EXPORT / IMPORT ════ */
+function exportConfig(){
+  const cfg=getActiveCfg();
+  if(!cfg){toast('请先选择一个配置','warn');return;}
+  const data=JSON.stringify(cfg,null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=cfg.name.replace(/[\/\\:*?"<>|]/g,'_')+'.json';
+  a.click();URL.revokeObjectURL(url);
+  toast('已导出：'+cfg.name,'ok');
+}
+
+function importConfig(){
+  document.getElementById('import-file-input').value='';
+  document.getElementById('import-file-input').click();
+}
+
+function handleImportFile(input){
+  const file=input.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.sections||!Array.isArray(data.sections)) throw new Error('格式错误');
+      const id='cfg_'+Date.now();
+      const name=(data.name||file.name.replace(/\.json$/,''))+'（导入）';
+      configs.push({id,name,cost:data.cost||2,sections:cloneData(data.sections),savedAt:Date.now()});
+      saveLS('ysg_configs',configs);
+      loadConfig(id);
+      toast('已导入：'+name,'ok');
+    }catch(err){toast('导入失败：文件格式不正确');}
+  };
+  reader.readAsText(file);
+}
+
+/* ════ DIVINE TYPE ════ */
+const DIVINE_INFO = {
+  '头盔': { title:'⚡ 头盔腐化效果', text:'头盔可腐化添加隐性词条，常见效果：附加技能等级、减少光环保留量、附加光环效果等。腐化成功将永久改变装备属性，失败则装备可能消失或变白。' },
+  '胸甲': { title:'⚡ 胸甲腐化效果', text:'胸甲腐化常见效果：增加最大生命/魔力、减少异常状态持续时间、增加格挡几率等。高品质稀有胸甲腐化价值极高，需谨慎操作。' },
+  '手套': { title:'⚡ 手套腐化效果', text:'手套腐化常见效果：攻击时附加元素伤害、腐化词条（如召唤冰霜护盾）、增加攻击速度等。对特定 Build 可以大幅提升输出。' },
+  '靴子': { title:'⚡ 靴子腐化效果', text:'靴子腐化常见效果：增加移动速度（额外 10%）、技能触发、增加迅捷类效果等。移动速度词条是最受玩家追捧的腐化结果之一。' },
+  '武器': { title:'⚡ 武器腐化效果', text:'武器腐化常见效果：增加攻击速度、附加暴击几率、附加元素穿透等。高品质独特武器腐化结果价值可达数十 Divine。' },
+  '副手': { title:'⚡ 副手腐化效果', text:'副手（盾牌/箭袋/魔杖）腐化效果因类型不同差异较大。盾牌常见：格挡时触发技能；箭袋常见：增加弓箭伤害或投射物数量。' },
+  '戒指': { title:'⚡ 戒指腐化效果', text:'戒指腐化常见效果：附加元素抗性、附加属性（力量/敏捷/智慧）、腐化隐性词条等。饰品腐化相对安全，失败损失较低。' },
+  '项链': { title:'⚡ 项链腐化效果', text:'项链腐化常见效果：增加全属性、增加技能等级、附加元素伤害等。高价值项链腐化需配合神谕者保险操作。' },
+  '腰带': { title:'⚡ 腰带腐化效果', text:'腰带腐化常见效果：增加最大生命、附加属性、增加全局防御等。腰带腐化结果相对有限，但特定隐性词条价值不菲。' },
+  '珠宝': { title:'⚡ 珠宝腐化效果', text:'珠宝腐化后会添加腐化隐性词条，可以改变技能行为或数值。异能珠宝腐化可获得特殊天赋节点效果，价值极高。' },
+  '地图': { title:'⚡ 地图腐化效果', text:'地图腐化后可能添加额外词缀、改变地图品质、出现特殊boss等。腐化8个独特地图可能触发狂乱地图机制，是高效率刷图策略之一。' },
+  '宝石': { title:'⚡ 宝石腐化效果', text:'宝石腐化可能：增加/减少1个技能等级、改变品质类型（优异/异常/幻想）、变为异常品质（vaal版本）。觉醒宝石腐化风险最高但回报丰厚。' },
+};
+
+function onDivineTypeChange(val){
+  const info=DIVINE_INFO[val]||{title:'⚡ '+val+'腐化效果',text:'请查阅 poe.ninja 了解该装备类型的详细腐化词条与市场价格。'};
+  document.getElementById('divine-info-title').textContent=info.title;
+  document.getElementById('divine-info-text').textContent=info.text;
+}
+
+/* ════ INIT ════ */
+(()=>{
+  if(configs.length===0){
+    const id='cfg_default';
+    configs.push({id,name:'梅文攻坚（示例）',cost:2,sections:cloneData(DEFAULT_SECTIONS),savedAt:Date.now()});
+    saveLS('ysg_configs',configs);activeId=id;saveLS('ysg_active',id);
+  }
+  const activeCfg=configs.find(c=>c.id===activeId)||configs[0];
+  if(activeCfg){
+    activeId=activeCfg.id;
+    sections=cloneData(activeCfg.sections);cost=activeCfg.cost||2;
+    document.getElementById('cost').value=cost;
+    document.getElementById('cost2').value=cost;
+    document.getElementById('cfg-title').value=activeCfg.name;
+    document.getElementById('cfg-name-field').value=activeCfg.name;
+  }
+  renderSidebar();renderHistory();render();
+})();
+</script>
+</body>
+</html>
