@@ -5,8 +5,6 @@
 A Path of Exile tool to track and analyze corruption profits. Manage multiple items independently, log all four corruption outcomes, auto-calculate cost & revenue in Divine/Chaos with exchange rate conversion, view real-time profit stats, simulate runs in bulk or manually, and back up data via import/export. Trade smarter with data.
 
 
-好的，我已经仔细阅读了这个工具的完整代码。下面是针对该软件的对外功能介绍：
-
 ---
 
 # 双瓦腐化利润计算器 V0.1
